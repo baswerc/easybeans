@@ -12,7 +12,7 @@ public class ObjectNameTest extends TestCase
     ObjectName objectName = wrapper.objectName;
     
     assertNotNull(objectName);
-    assertEquals("org.easybean", objectName.getDomain());
+    assertEquals("org.baswell.easybeans", objectName.getDomain());
     assertEquals("One", objectName.getKeyProperty("Name"));
   }
   
