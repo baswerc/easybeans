@@ -12,7 +12,7 @@ import org.baswell.easybeans.EasyBeanDescription;
 import org.baswell.easybeans.EasyBeanDescriptions;
 import org.baswell.easybeans.EasyBeanExposureLevel;
 import org.baswell.easybeans.EasyBeanNotification;
-import org.baswell.easybeans.Param;
+import org.baswell.easybeans.P;
 
 @EasyBean(objectName = "org.test:Name=One", exposeLevel = EasyBeanExposureLevel.ALL)
 @MXBean
@@ -41,7 +41,7 @@ public class One implements OneMXBean
 
   @EasyBeanConstructor(name = "Super Constructor", description = "Word up")
   @EasyBeanDescription(name = "one", value = "word")
-  public One(@Param(value = "yo", description = "Something") String yo)
+  public One(@P(value = "yo", description = "Something") String yo)
   {
   }
 
@@ -100,7 +100,7 @@ public class One implements OneMXBean
   /* (non-Javadoc)
    * @see OneMXBean#callMe(java.lang.String)
    */
-  public void callMe(@Param(value = "with", description = "The with") String with)
+  public void callMe(@P(value = "with", description = "The with") String with)
   {
     System.out.println("callMe(" + with + ")");
   }

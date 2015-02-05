@@ -3,7 +3,7 @@ package org.baswell.easybeans.beans;
 import java.util.List;
 
 import org.baswell.easybeans.EasyBeanAttribute;
-import org.baswell.easybeans.Param;
+import org.baswell.easybeans.P;
 
 public interface OneMXBean
 {
@@ -24,7 +24,7 @@ public interface OneMXBean
 
   public abstract void callMe();
 
-  public abstract void callMe(@Param(value = "with", description = "The with") String with);
+  public abstract void callMe(@P(value = "with", description = "The with") String with);
 
   public abstract String callMeX(String with);
 

@@ -62,15 +62,12 @@ public class OpenTypeMappingCreator
     simpleTypeMapping.put(Void.class, new OpenTypeMapping(SimpleType.VOID, Void.class));
   }
   
-  public OpenTypeMappingCreator()
-  {}
-
-  public OpenTypeMapping createOpenType(TypeWrapper typeWrapper)
+  static public OpenTypeMapping createOpenType(TypeWrapper typeWrapper)
   {
     return createOpenType(typeWrapper, new ArrayList<Class>());
   }
   
-  public OpenTypeMapping createOpenType(TypeWrapper typeWrapper, List<Class> compositedClassesVisited)
+  static public OpenTypeMapping createOpenType(TypeWrapper typeWrapper, List<Class> compositedClassesVisited)
   {
     Class rawClass = typeWrapper.getRawClass();
     
@@ -100,7 +97,7 @@ public class OpenTypeMappingCreator
     }
   }
 
-  OpenTypeMapping createArrayType(TypeWrapper typeWrapper, List<Class> compositedClassesVisited)
+  static OpenTypeMapping createArrayType(TypeWrapper typeWrapper, List<Class> compositedClassesVisited)
   {
     Type type = typeWrapper.getType();
     Class rawClass = typeWrapper.getRawClass();
@@ -167,7 +164,7 @@ public class OpenTypeMappingCreator
     }
   }
   
-  OpenTypeMapping createTabularType(TypeWrapper typeWrapper, List<Class> compositedClassesVisited)
+  static OpenTypeMapping createTabularType(TypeWrapper typeWrapper, List<Class> compositedClassesVisited)
   {
     Type type = typeWrapper.getType();
     Class rawClass = typeWrapper.getRawClass();
@@ -216,7 +213,7 @@ public class OpenTypeMappingCreator
     }
   }
   
-  OpenTypeMapping createCompositeType(TypeWrapper typeWrapper, List<Class> compositedClassesVisited)
+  static OpenTypeMapping createCompositeType(TypeWrapper typeWrapper, List<Class> compositedClassesVisited)
   {
     Class rawClass = typeWrapper.getRawClass();
     
@@ -296,7 +293,7 @@ public class OpenTypeMappingCreator
     }
   }
   
-  boolean isOpenType(Class clazz)
+  static boolean isOpenType(Class clazz)
   {
     if (clazz == Object.class)
     {
@@ -312,7 +309,7 @@ public class OpenTypeMappingCreator
     }
   }
   
-  boolean implementsInterface(Class clazz, Class interfce)
+  static boolean implementsInterface(Class clazz, Class interfce)
   {
     if (clazz.equals(interfce))
     {
@@ -332,7 +329,7 @@ public class OpenTypeMappingCreator
     }
   }
   
-  boolean extendsClass(Class clazz, Class superClass)
+  static boolean extendsClass(Class clazz, Class superClass)
   { 
     if (clazz == superClass)
     {
@@ -358,7 +355,7 @@ public class OpenTypeMappingCreator
    * @param clazz The array class.
    * @return The number of dimensions found in the class name of the given class.
    */
-  int numberArrayDimensions(Class clazz)
+  static int numberArrayDimensions(Class clazz)
   {
     char[] chars = clazz.getName().toCharArray();
     int numDimensions = 0;
@@ -369,19 +366,19 @@ public class OpenTypeMappingCreator
     return numDimensions;
   }
   
-  Class getArrayComponentClass(Class clazz)
+  static Class getArrayComponentClass(Class clazz)
   {
     Class componentClass = clazz.getComponentType();
     return (componentClass.isArray()) ? getArrayComponentClass(componentClass) : componentClass;
   }
   
-  Type getArrayComponentType(GenericArrayType arrayType)
+  static Type getArrayComponentType(GenericArrayType arrayType)
   {
     Type type = arrayType.getGenericComponentType();
     return (type instanceof GenericArrayType) ? getArrayComponentType((GenericArrayType)type) : type;
   }
 
-  boolean isTransient(TypeWrapper typeWrapper)
+  static boolean isTransient(TypeWrapper typeWrapper)
   {
     return (typeWrapper.getAnnotation(EasyBeanTransient.class) != null);
   }

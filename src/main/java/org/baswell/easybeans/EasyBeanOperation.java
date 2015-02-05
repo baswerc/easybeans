@@ -8,8 +8,6 @@ import java.lang.annotation.Target;
 /**
  * Provides meta data for a MBean operation.
  * 
- * @author Corey Baswell
- *
  */
 @Target({ElementType.METHOD})
 @Retention(value=RetentionPolicy.RUNTIME)
@@ -21,5 +19,6 @@ public @interface EasyBeanOperation
    */
   String name() default "";
   String description() default "";
+  String[] parameterNames() default {};
   OperationImpact impact() default OperationImpact.UNKNOWN;
 }

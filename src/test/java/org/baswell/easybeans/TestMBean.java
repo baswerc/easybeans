@@ -38,7 +38,7 @@ public class TestMBean implements DynamicMBean
     Object mbean = new One();
     mbs.registerMBean(mbean, name);
 
-    new EasyBeanServerRegistery().register(new One());
+    new EasyBeansRegistery().register(new One());
     synchronized (TestMBean.class)
     {
       TestMBean.class.wait();

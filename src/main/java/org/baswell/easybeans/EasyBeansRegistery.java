@@ -13,7 +13,8 @@ import javax.management.MalformedObjectNameException;
 import javax.management.NotCompliantMBeanException;
 import javax.management.ObjectName;
 
-public class EasyBeanServerRegistery
+
+public class EasyBeansRegistery
 {
   private Map<IdentityHashKey, EasyBeanWrapper> beansMap = new HashMap<IdentityHashKey, EasyBeanWrapper>();
 

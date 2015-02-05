@@ -21,6 +21,7 @@ public @interface EasyBeanConstructor
    */
   String name() default "";
   String description() default "";
+  String[] parameterNames() default {};
   String[] descriptorNames() default {};
   String[] descriptorValues() default {};
 }
