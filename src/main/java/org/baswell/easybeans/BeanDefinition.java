@@ -1,24 +1,33 @@
 package org.baswell.easybeans;
 
+import javax.management.Descriptor;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.*;
 
+import static org.baswell.easybeans.SharedMethods.*;
+
 public class BeanDefinition
 {
+  public final Class clazz;
+
+  public final Descriptor descriptor;
+
   public final List<BeanConstructor> constructors;
 
   public final List<BeanAttribute> attributes;
 
   public final List<BeanOperation> operations;
 
-  private final Class clazz;
-
   public BeanDefinition(Class clazz) throws UneasyBeanException
   {
     this.clazz = clazz;
+
+    EasyBean mbeanAnnotation = (EasyBean)clazz.getAnnotation(EasyBean.class);
+    descriptor = (mbeanAnnotation == null) ? null : getDescriptor(clazz.getAnnotations());
+
 
     List<Constructor> publicConstructors = getPublicNonTransientConstructors(clazz);
     List<BeanConstructor> constructors = new ArrayList<BeanConstructor>();

@@ -1,50 +1,22 @@
 package org.baswell.easybeans;
 
-import java.beans.IntrospectionException;
+import javax.management.*;
+import javax.management.openmbean.*;
 import java.lang.annotation.Annotation;
-import java.lang.reflect.AccessibleObject;
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-import javax.management.Attribute;
-import javax.management.AttributeList;
-import javax.management.AttributeNotFoundException;
-import javax.management.Descriptor;
-import javax.management.DynamicMBean;
-import javax.management.InvalidAttributeValueException;
-import javax.management.ListenerNotFoundException;
-import javax.management.MBeanException;
-import javax.management.MBeanInfo;
-import javax.management.MBeanNotificationInfo;
-import javax.management.MalformedObjectNameException;
-import javax.management.Notification;
-import javax.management.NotificationBroadcaster;
-import javax.management.NotificationEmitter;
-import javax.management.NotificationFilter;
-import javax.management.NotificationListener;
-import javax.management.ObjectName;
-import javax.management.ReflectionException;
-import javax.management.modelmbean.DescriptorSupport;
-import javax.management.modelmbean.ModelMBeanNotificationInfo;
-import javax.management.openmbean.OpenMBeanAttributeInfo;
-import javax.management.openmbean.OpenMBeanAttributeInfoSupport;
-import javax.management.openmbean.OpenMBeanConstructorInfo;
-import javax.management.openmbean.OpenMBeanConstructorInfoSupport;
-import javax.management.openmbean.OpenMBeanInfoSupport;
-import javax.management.openmbean.OpenMBeanOperationInfo;
-import javax.management.openmbean.OpenMBeanOperationInfoSupport;
-import javax.management.openmbean.OpenMBeanParameterInfo;
-import javax.management.openmbean.OpenMBeanParameterInfoSupport;
-import javax.management.openmbean.OpenType;
+import static org.baswell.easybeans.SharedMethods.getDescriptor;
+import static org.baswell.easybeans.SharedMethods.nullEmpty;
 
 /**
- * Wraps plain Java objects to expose their attributes and operations as a DynamicMBean.
+ * Wraps plain a Java object to expose their attributes and operations as a DynamicMBean. If you need support for notifications
+ * use {@link EasyBeanNotificationWrapper}
  *
  */
-public class EasyBeanWrapper implements DynamicMBean, NotificationEmitter
+public class EasyBeanWrapper implements DynamicMBean
 {
   static Map<String, Class> classEquivalentMap = new ConcurrentHashMap<String, Class>();
   static
@@ -69,7 +41,6 @@ public class EasyBeanWrapper implements DynamicMBean, NotificationEmitter
 
   MBeanInfo info;
   ObjectName objectName;
-  List<NotificationListenerEntry> listenerEntries;
 
   Map<String, BeanAttribute> attributeReadMap;
   Map<String, BeanAttribute> attributeWriteMap;
@@ -86,7 +57,6 @@ public class EasyBeanWrapper implements DynamicMBean, NotificationEmitter
   public EasyBeanWrapper(Object pojo) throws EasyBeanDefinitionException
   {
     this.pojo = pojo;
-    openTypeMappingCreator = new OpenTypeMappingCreator();
     openTypeMapper = new OpenTypeMapper();
     
     Class clazz = pojo.getClass();
@@ -124,9 +94,8 @@ public class EasyBeanWrapper implements DynamicMBean, NotificationEmitter
       OpenMBeanAttributeInfo[] attributeInfo = loadAttributeInfo(beanDefinition.attributes);
       OpenMBeanOperationInfo[] opInfo = loadOperationInfo(beanDefinition.operations);
       MBeanNotificationInfo[] notificationInfo = loadNotificationInfo(clazz);
-      Descriptor descriptor = (mbeanAnnotation == null) ? null : getDescriptor(clazz.getAnnotations());
-      
-      info = new OpenMBeanInfoSupport(className, mbeanDescription, attributeInfo, constructorInfo, opInfo, notificationInfo, descriptor);
+
+      info = new OpenMBeanInfoSupport(className, mbeanDescription, attributeInfo, constructorInfo, opInfo, notificationInfo, beanDefinition.descriptor);
     }
     catch (MalformedObjectNameException monexc)
     {
@@ -291,88 +260,6 @@ public class EasyBeanWrapper implements DynamicMBean, NotificationEmitter
     return updateAttributes;
   }
 
-  /**
-   * 
-   * @see NotificationEmitter#getNotificationInfo()
-   */
-  public MBeanNotificationInfo[] getNotificationInfo()
-  {
-    if (pojo instanceof NotificationBroadcaster)
-    {
-      return ((NotificationBroadcaster) pojo).getNotificationInfo();
-    }
-    else
-    {
-      return info.getNotifications();
-    }
-  }
-
-  /**
-   * 
-   * @see NotificationEmitter#addNotificationListener(NotificationListener, NotificationFilter, Object)
-   */
-  public void addNotificationListener(NotificationListener listener, NotificationFilter filter, Object handback) throws IllegalArgumentException
-  {
-    if (pojo instanceof NotificationBroadcaster)
-    {
-      ((NotificationBroadcaster) pojo).addNotificationListener(listener, filter, handback);
-    }
-    else
-    {
-      listenerEntries.add(new NotificationListenerEntry(listener, filter, handback));
-    }
-  }
-
-  /**
-   * 
-   * @see NotificationEmitter#removeNotificationListener(NotificationListener, NotificationFilter, Object)
-   */
-  public void removeNotificationListener(NotificationListener listener, NotificationFilter filter, Object handback) throws ListenerNotFoundException
-  {
-    if (pojo instanceof NotificationEmitter)
-    {
-      ((NotificationEmitter) pojo).removeNotificationListener(listener, filter, handback);
-    }
-    else if (pojo instanceof NotificationBroadcaster)
-    {
-      ((NotificationBroadcaster) pojo).removeNotificationListener(listener);
-    }
-    else
-    {
-      for (int i = (listenerEntries.size() - 1); i >= 0; i--)
-      {
-        NotificationListenerEntry listenerEntry = (NotificationListenerEntry)listenerEntries.get(i);
-        if (listenerEntry.equals(listener, filter, handback))
-        {
-          listenerEntries.remove(i);
-        }
-      }
-    }
-  }
-
-  /**
-   * 
-   * @see NotificationEmitter#removeNotificationListener(NotificationListener)
-   */
-  public void removeNotificationListener(NotificationListener listener) throws ListenerNotFoundException
-  {
-    if (pojo instanceof NotificationBroadcaster)
-    {
-      ((NotificationBroadcaster) pojo).removeNotificationListener(listener);
-    }
-    else
-    {
-      for (int i = (listenerEntries.size() - 1); i >= 0; i--)
-      {
-        NotificationListenerEntry listenerEntry = (NotificationListenerEntry)listenerEntries.get(i);
-        if (listenerEntry.equals(listener))
-        {
-          listenerEntries.remove(i);
-        }
-      }
-    }
-  }
-
   OpenMBeanConstructorInfo[] loadConstructorInfo(List<BeanConstructor> beanConstructors)
   {
     List<OpenMBeanConstructorInfo> constructorsInfo = new ArrayList<OpenMBeanConstructorInfo>();
@@ -499,45 +386,6 @@ public class EasyBeanWrapper implements DynamicMBean, NotificationEmitter
     return operationsInfo.toArray(new OpenMBeanOperationInfo[operationsInfo.size()]);
   }
   
-  MBeanNotificationInfo[] loadNotificationInfo(Class clazz)
-  {
-    if (pojo instanceof NotificationBroadcaster)
-    {
-      return ((NotificationBroadcaster) pojo).getNotificationInfo();
-    }
-    else
-    {
-      Annotation[] annotations = clazz.getAnnotations();
-      List<MBeanNotificationInfo> notificationInfoList = new ArrayList<MBeanNotificationInfo>();
-      
-      for (Annotation annotation : annotations)
-      {
-        if (annotation instanceof EasyBeanNotification)
-        {
-          EasyBeanNotification notificationMeta = (EasyBeanNotification)annotation;
-          String name = notificationMeta.name();
-          String description = notificationMeta.description();
-          String[] notifyTypes = notificationMeta.types();
-          notificationInfoList.add(new ModelMBeanNotificationInfo(notifyTypes, name, description, getDescriptor(Arrays.asList(notificationMeta.descriptor()))));
-        }
-        else if (annotation instanceof EasyBeanNotifications)
-        {
-          for (EasyBeanNotification notificationMeta : ((EasyBeanNotifications)annotation).value())
-          {
-            String name = notificationMeta.name();
-            String description = notificationMeta.description();
-            String[] notifyTypes = notificationMeta.types();
-            notificationInfoList.add(new ModelMBeanNotificationInfo(notifyTypes, name, description, getDescriptor(Arrays.asList(notificationMeta.descriptor()))));
-          }
-        }
-      }
-      
-      listenerEntries = new ArrayList<NotificationListenerEntry>();
-      return notificationInfoList.toArray(new ModelMBeanNotificationInfo[notificationInfoList.size()]);
-    }
-  }
-  
-
   OpenMBeanParameterInfo[] getParameterInfo(Class<?>[] paramTypes, Annotation[][] annotations, String[] parameterNames, String[] parameterDescriptions)
   {
     OpenMBeanParameterInfo[] paramsInfo = new OpenMBeanParameterInfo[paramTypes.length];
@@ -585,88 +433,11 @@ public class EasyBeanWrapper implements DynamicMBean, NotificationEmitter
     return paramsInfo;
   }
 
-  Descriptor getDescriptor(AccessibleObject... accessibleObjects)
+  MBeanNotificationInfo[] loadNotificationInfo(Class clazz)
   {
-    List<Annotation> annotations = new ArrayList<Annotation>();
-    for (AccessibleObject accessibleObject : accessibleObjects)
-    {
-      if (accessibleObject != null)
-      {
-        Annotation[] annons = accessibleObject.getAnnotations();
-        if (annons != null)
-        {
-          annotations.addAll(Arrays.asList(annons));
-        }
-      }
-    }
-    
-    return getDescriptor(annotations.toArray(new Annotation[annotations.size()]));
+    return new MBeanNotificationInfo[0];
   }
-  
-  Descriptor getDescriptor(Annotation[] annotations)
-  {
-    List<EasyBeanDescription> descriptions = new ArrayList<EasyBeanDescription>();
-    
-    if ((annotations != null) && (annotations.length > 0))
-    {
-      for (Annotation annotation : annotations)
-      {
-        if (annotation instanceof EasyBeanDescription)
-        {
-          descriptions.add((EasyBeanDescription)annotation);
-        }
-        else if (annotation instanceof EasyBeanDescriptions)
-        {
-          EasyBeanDescriptions mbeanDescr = (EasyBeanDescriptions)annotation;
-          for (EasyBeanDescription mbeanDesc : mbeanDescr.value())
-          {
-            descriptions.add(mbeanDesc);
-          }
-        }
-      }
-    }
-    
-    return getDescriptor(descriptions);
-  }
-  
-  Descriptor getDescriptor(List<EasyBeanDescription> descriptions)
-  {
-    if (descriptions.size() > 0)
-    {
-      String[] names = new String[descriptions.size()];
-      String[] values = new String[descriptions.size()];
-      for (int i = 0; i < descriptions.size(); i++)
-      {
-        EasyBeanDescription easyDesc = descriptions.get(i);
-        names[i] = easyDesc.name();
-        values[i] = easyDesc.value();
-      }
-      
-      return new DescriptorSupport(names, values);
-    }
-    else
-    {
-      return null;
-    }
-  }
-  
-  boolean nullEmpty(String value)
-  {
-    return ((value == null) || (value.trim().length() == 0));
-  }
-  
-  String capatalize(String text)
-  {
-    if (text.length() > 2)
-    {
-      return text.substring(0, 1).toUpperCase() + text.substring(1, text.length());
-    }
-    else
-    {
-      return text.toUpperCase();
-    }
-  }
-  
+
   boolean classesEquivalent(Class<?> clazz, String canonicalName)
   {
     if (clazz.getCanonicalName().equals(canonicalName))
@@ -680,51 +451,6 @@ public class EasyBeanWrapper implements DynamicMBean, NotificationEmitter
     else
     {
       return false;
-    }
-  }
-
-  private class MethodTypePair
-  {
-    public Method method;
-    
-    public OpenTypeMapping typeMapping;
-    
-    public MethodTypePair(Method method, OpenTypeMapping typeMapping)
-    {
-      this.method = method;
-      this.typeMapping = typeMapping;
-    }
-  }
-  
-  private class NotificationListenerEntry
-  {
-    private NotificationListener listener;
-    private NotificationFilter filter;
-    private Object handback;
-    
-    public NotificationListenerEntry(NotificationListener listener, NotificationFilter filter, Object handback)
-    {
-      this.listener = listener;
-      this.filter = filter;
-      this.handback = handback;
-    }
-    
-    public void notifyIfNotFiltered(Notification notification)
-    {
-      if ((filter == null) || (filter.isNotificationEnabled(notification)))
-      {
-        listener.handleNotification(notification, handback);
-      }
-    }
-
-    public boolean equals(NotificationListener listener, NotificationFilter filter, Object handback)
-    {
-      return ((this.listener == listener) && (this.filter == filter) && (this.handback == handback));
-    }
-    
-    public boolean equals(NotificationListener listener)
-    {
-      return (this.listener == listener);
     }
   }
 }
