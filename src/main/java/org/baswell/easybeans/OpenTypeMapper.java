@@ -47,11 +47,11 @@ class OpenTypeMapper
       return mapComposite(obj, typeMapping);
     }
   }
-  
+
   Object mapArray(Object obj, OpenTypeMapping typeMapping) throws OpenDataException
   {
     OpenTypeMapping elementTypeMapping = typeMapping.getElementTypeMapping();
-    
+
     if (obj.getClass().isArray())
     {
       if (elementTypeMapping.isSimpleType())
@@ -62,7 +62,7 @@ class OpenTypeMapper
       {
         ArrayType arrayType = typeMapping.getArrayType();
         int numDimensions = arrayType.getDimension();
-        
+
         if (numDimensions == 1)
         {
           int length = Array.getLength(obj);
@@ -71,7 +71,7 @@ class OpenTypeMapper
           {
             compositeData[i] = mapComposite(Array.get(obj, i), elementTypeMapping);
           }
-          
+
           return compositeData;
         }
         else
@@ -83,7 +83,7 @@ class OpenTypeMapper
           }
 
           Object compositeData = Array.newInstance(CompositeData.class, dimensions);
-          
+
           for (int i = 0; i < numDimensions; i++)
           {
             Object indexArray = Array.get(obj, i);
@@ -95,7 +95,7 @@ class OpenTypeMapper
             }
             Array.set(compositeData, i, indexCompositeData);
           }
-          
+
           return compositeData;
         }
       }
@@ -108,11 +108,11 @@ class OpenTypeMapper
       {
         list.add(listObj);
       }
-      
+
       int length = list.size();
       boolean simpleType = elementTypeMapping.isSimpleType();
       Object array = Array.newInstance((simpleType ? elementTypeMapping.getSimpleClass() : CompositeData.class), length);
-      
+
       for (int i = 0; i < length; i++)
       {
         Object listObj = list.get(i);
@@ -125,7 +125,7 @@ class OpenTypeMapper
           Array.set(array, i, mapComposite(listObj, elementTypeMapping));
         }
       }
-      
+
       return array;
     }
     else
@@ -133,49 +133,49 @@ class OpenTypeMapper
       return obj; // Should never get here
     }
   }
-  
+
   TabularData mapTable(Object obj, OpenTypeMapping typeMapping) throws OpenDataException
   {
     Map map = (Map)obj;
-    
+
     TabularType tabularType = typeMapping.getTabularType();
     CompositeType rowType = tabularType.getRowType();
-    
+
     TabularDataSupport tabularData = new TabularDataSupport(tabularType);
-    
+
     OpenTypeMapping keyTypeMapping = typeMapping.getKeyTypeMapping();
     OpenTypeMapping valueTypeMapping = typeMapping.getValueTypeMapping();
     String[] rowAttNames = new String[] {"key", "value"};
-    
+
     for (Object entryObj : map.entrySet())
     {
       Entry entry = (Entry)entryObj;
       Object key = entry.getKey();
       Object value = entry.getValue();
-      
+
       Object mappedKey = map(key, keyTypeMapping);
       Object mappedValue = map(value, valueTypeMapping);
       tabularData.put(new CompositeDataSupport(rowType, rowAttNames, new Object[] {mappedKey, mappedValue}));
     }
-    
+
     return tabularData;
   }
-  
+
   CompositeData mapComposite(Object obj, OpenTypeMapping typeMapping) throws OpenDataException
   {
     CompositeType type = typeMapping.getCompositeType();
     Set<String> nameSet = type.keySet();
-    
+
     List<String> names = new ArrayList<String>();
     List<Object> values = new ArrayList<Object>();
-    
+
     for (String name : nameSet)
     {
       try
       {
         Method attributeGetterMethod = typeMapping.getAttributeMethod(name);
         OpenTypeMapping attributeTypeMapping = typeMapping.getAttributeMapping(name);
-        
+
         Object value = attributeGetterMethod.invoke(obj);
         Object mappedValue = (value == null) ? null : map(value, attributeTypeMapping);
         names.add(name);
@@ -186,7 +186,7 @@ class OpenTypeMapper
         throw new RuntimeException(exc);
       }
     }
-    
+
     return new CompositeDataSupport(type, names.toArray(new String[names.size()]), values.toArray(new Object[values.size()]));
   }
 }
