@@ -15,10 +15,11 @@ public @interface EasyBeanOperation
 {
   /**
    * Specify this attribute if you need to override the operation name based
-   * on the method name of this annotation.
+   * on the constructor name of this annotation.
    */
   String name() default "";
   String description() default "";
   String[] parameterNames() default {};
+  String[] parameterDescriptions() default {};
   OperationImpact impact() default OperationImpact.UNKNOWN;
 }

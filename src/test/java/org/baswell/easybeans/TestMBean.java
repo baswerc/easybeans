@@ -50,10 +50,10 @@ public class TestMBean implements DynamicMBean
     
     /*
     Method[] methods = TestMBean.class.getMethods();
-    for (Method method : methods)
+    for (Method constructor : methods)
     {
-      System.out.println(method.getName());
-      Class clazz = method.getReturnType();
+      System.out.println(constructor.getName());
+      Class clazz = constructor.getReturnType();
       System.out.println(clazz);
     }
     */
@@ -172,19 +172,19 @@ public class TestMBean implements DynamicMBean
 
   public Object invoke(String arg0, Object[] arg1, String[] arg2) throws MBeanException, ReflectionException
   {
-    // TODO Auto-generated method stub
+    // TODO Auto-generated constructor stub
     return null;
   }
 
   public void setAttribute(Attribute arg0) throws AttributeNotFoundException, InvalidAttributeValueException, MBeanException, ReflectionException
   {
-    // TODO Auto-generated method stub
+    // TODO Auto-generated constructor stub
     
   }
 
   public AttributeList setAttributes(AttributeList arg0)
   {
-    // TODO Auto-generated method stub
+    // TODO Auto-generated constructor stub
     return null;
   }
 }

@@ -1,8 +1,6 @@
 package org.baswell.easybeans;
 
-import java.beans.BeanInfo;
 import java.beans.IntrospectionException;
-import java.beans.MethodDescriptor;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.Constructor;
@@ -42,15 +40,6 @@ import javax.management.openmbean.OpenMBeanParameterInfo;
 import javax.management.openmbean.OpenMBeanParameterInfoSupport;
 import javax.management.openmbean.OpenType;
 
-import com.sun.corba.se.spi.orb.Operation;
-import org.baswell.easybeans.impl.OpenTypeMapper;
-import org.baswell.easybeans.impl.OpenTypeMapping;
-import org.baswell.easybeans.impl.OpenTypeMappingCreator;
-import org.baswell.easybeans.impl.TypeWrapper;
-import org.baswell.easybeans.impl.meta.AttributeMeta;
-import org.baswell.easybeans.impl.meta.ClassMeta;
-import org.baswell.easybeans.impl.meta.OperationMeta;
-
 /**
  * Wraps plain Java objects to expose their attributes and operations as a DynamicMBean.
  *
@@ -82,9 +71,9 @@ public class EasyBeanWrapper implements DynamicMBean, NotificationEmitter
   ObjectName objectName;
   List<NotificationListenerEntry> listenerEntries;
 
-  Map<String, AttributeMeta> attributeReadMap;
-  Map<String, AttributeMeta> attributeWriteMap;
-  Map<String, List<OperationMeta>> operationMap;
+  Map<String, BeanAttribute> attributeReadMap;
+  Map<String, BeanAttribute> attributeWriteMap;
+  Map<String, List<BeanOperation>> operationMap;
   
   OpenTypeMappingCreator openTypeMappingCreator;
   OpenTypeMapper openTypeMapper;
@@ -130,10 +119,10 @@ public class EasyBeanWrapper implements DynamicMBean, NotificationEmitter
         exposeLevel = EasyBeanExposureLevel.ANNOTATED;
       }
 
-      ClassMeta classMeta = new ClassMeta(clazz);
-      OpenMBeanConstructorInfo[] constructorInfo = loadConstructorInfo(clazz);
-      OpenMBeanAttributeInfo[] attributeInfo = loadAttributeInfo(classMeta.attributes, classMeta.operations, clazz);
-      OpenMBeanOperationInfo[] opInfo = loadOperationInfo(classMeta.operations, clazz);
+      BeanDefinition beanDefinition = new BeanDefinition(clazz);
+      OpenMBeanConstructorInfo[] constructorInfo = loadConstructorInfo(beanDefinition.constructors);
+      OpenMBeanAttributeInfo[] attributeInfo = loadAttributeInfo(beanDefinition.attributes);
+      OpenMBeanOperationInfo[] opInfo = loadOperationInfo(beanDefinition.operations);
       MBeanNotificationInfo[] notificationInfo = loadNotificationInfo(clazz);
       Descriptor descriptor = (mbeanAnnotation == null) ? null : getDescriptor(clazz.getAnnotations());
       
@@ -143,11 +132,7 @@ public class EasyBeanWrapper implements DynamicMBean, NotificationEmitter
     {
       throw new EasyBeanDefinitionException(monexc);
     }
-    catch (IntrospectionException iexc)
-    {
-      throw new RuntimeException("Unable to get BeanInfo from class '" + clazz.getCanonicalName() + "' due to introspection excetion: " + iexc.getMessage());
-    }
-  } 
+  }
   
   public ObjectName getObjectName()
   {
@@ -166,9 +151,9 @@ public class EasyBeanWrapper implements DynamicMBean, NotificationEmitter
     }
     try
     {
-      AttributeMeta attributeMeta = attributeReadMap.get(attribute);
-      Object value = attributeMeta.get(pojo);
-      return openTypeMapper.map(value, attributeMeta.typeMapping);
+      BeanAttribute beanAttribute = attributeReadMap.get(attribute);
+      Object value = beanAttribute.get(pojo);
+      return openTypeMapper.map(value, beanAttribute.typeMapping);
     }
     catch (Exception exc)
     {
@@ -212,9 +197,9 @@ public class EasyBeanWrapper implements DynamicMBean, NotificationEmitter
    */
   public Object invoke(String actionName, Object[] params, String[] signature) throws MBeanException, ReflectionException
   {
-    List<OperationMeta> operations = operationMap.get(actionName);
+    List<BeanOperation> operations = operationMap.get(actionName);
 
-    for (OperationMeta operation : operations)
+    for (BeanOperation operation : operations)
     {
       Method method = operation.method;
       
@@ -388,28 +373,18 @@ public class EasyBeanWrapper implements DynamicMBean, NotificationEmitter
     }
   }
 
-  OpenMBeanConstructorInfo[] loadConstructorInfo(Class clazz)
+  OpenMBeanConstructorInfo[] loadConstructorInfo(List<BeanConstructor> beanConstructors)
   {
-    Constructor[] constructors = clazz.getConstructors();
     List<OpenMBeanConstructorInfo> constructorsInfo = new ArrayList<OpenMBeanConstructorInfo>();
     
-    for (Constructor constructor : constructors)
+    for (BeanConstructor beanConstructor : beanConstructors)
     {
-      EasyBeanConstructor easyConstructorAnnotation = (EasyBeanConstructor)constructor.getAnnotation(EasyBeanConstructor.class);
-      EasyBeanTransient transientAnnotation = (EasyBeanTransient)constructor.getAnnotation(EasyBeanTransient.class);
-
-      if ((transientAnnotation == null) && ((easyConstructorAnnotation != null) || (exposeLevel == EasyBeanExposureLevel.ALL)))
+      if (beanConstructor.wasAnnotated || (exposeLevel == EasyBeanExposureLevel.ALL))
       {
-        OpenMBeanParameterInfo[] paramsInfo = getParameterInfo(constructor.getParameterTypes(), constructor.getParameterAnnotations(), easyConstructorAnnotation == null ? null : easyConstructorAnnotation.parameterNames());
+        OpenMBeanParameterInfo[] paramsInfo = getParameterInfo(beanConstructor.constructor.getParameterTypes(), beanConstructor.constructor.getParameterAnnotations(), beanConstructor.parameterNames, beanConstructor.parameterDescriptions);
         if (paramsInfo != null)
         {
-          String name = (easyConstructorAnnotation != null) ? easyConstructorAnnotation.name() : null;
-          if (nullEmpty(name)) name = constructor.getName();
-          
-          String description = (easyConstructorAnnotation != null) ? easyConstructorAnnotation.description() : null;
-          if (nullEmpty(description)) description = name;
-          
-          constructorsInfo.add(new OpenMBeanConstructorInfoSupport(name, description, paramsInfo, getDescriptor(constructor)));
+          constructorsInfo.add(new OpenMBeanConstructorInfoSupport(beanConstructor.name, beanConstructor.description, paramsInfo, beanConstructor.descriptor));
         }
       }
     }
@@ -417,180 +392,37 @@ public class EasyBeanWrapper implements DynamicMBean, NotificationEmitter
     return constructorsInfo.toArray(new OpenMBeanConstructorInfo[constructorsInfo.size()]);
   }
   
-  OpenMBeanAttributeInfo[] loadAttributeInfo(List<AttributeMeta> attributes, List<OperationMeta> operations, Class beanClass)
+  OpenMBeanAttributeInfo[] loadAttributeInfo(List<BeanAttribute> beanAttributes)
   {
-    attributeReadMap = new HashMap<String, AttributeMeta>();
-    attributeWriteMap = new HashMap<String, AttributeMeta>();
+    attributeReadMap = new HashMap<String, BeanAttribute>();
+    attributeWriteMap = new HashMap<String, BeanAttribute>();
     
     List<OpenMBeanAttributeInfo> attributesInfo = new ArrayList<OpenMBeanAttributeInfo>();
     
-    List<String> methodsAdded = new ArrayList<String>();
-    
-    for (AttributeMeta attribute : attributes)
+    for (BeanAttribute beanAttribute : beanAttributes)
     {
-      if (attribute.typeMapping != null)
+      if (beanAttribute.typeMapping != null)
       {
-        EasyBeanAttribute readMeta = attribute.getReadAnnotation(EasyBeanAttribute.class);
-        EasyBeanTransient readTransient = attribute.getWriteAnnotation(EasyBeanTransient.class);
-
-        EasyBeanAttribute writeMeta = attribute.getWriteAnnotation(EasyBeanAttribute.class);
-        EasyBeanTransient writeTransient = attribute.getWriteAnnotation(EasyBeanTransient.class);
-
-        boolean isReadable = attribute.hasReadAccess() && ((readMeta != null) || (exposeLevel != EasyBeanExposureLevel.ANNOTATED));
-        boolean isWriteable = attribute.hasWriteAccess() && ((writeMeta != null) || (exposeLevel == EasyBeanExposureLevel.ALL));
+        boolean isReadable = beanAttribute.hasReadAccess() && (beanAttribute.wasReadAnnotated || (exposeLevel != EasyBeanExposureLevel.ANNOTATED));
+        boolean isWriteable = beanAttribute.hasWriteAccess() && (beanAttribute.wasWriteAnnotated || (exposeLevel == EasyBeanExposureLevel.ALL));
 
         if (isReadable || isWriteable)
         {
-          String name = capatalize(attribute.name);
-
-          String description = (readMeta != null) ? readMeta.description() : null;
-          if (nullEmpty(description)) description = (writeMeta != null) ? writeMeta.description() : null;
-          if (nullEmpty(description)) description = name;
-
-          attributesInfo.add(new OpenMBeanAttributeInfoSupport(name, description, (OpenType<Long>) attribute.typeMapping.getOpenType(), isReadable, isWriteable, attribute.isIs(), getDescriptor(attribute.getAccessibleObjects())));
+          attributesInfo.add(new OpenMBeanAttributeInfoSupport(beanAttribute.name, beanAttribute.description, (OpenType<Long>) beanAttribute.typeMapping.getOpenType(), isReadable, isWriteable, beanAttribute.isIs(), beanAttribute.descriptor));
 
           if (isReadable)
           {
-            attributeReadMap.put(name, attribute);
+            attributeReadMap.put(beanAttribute.name, beanAttribute);
           }
 
           if (isWriteable)
           {
-            attributeWriteMap.put(name, attribute);
+            attributeWriteMap.put(beanAttribute.name, beanAttribute);
           }
         }
       }
     }
 
-    Set<String> convertedOperations = new HashSet<String>();
-    for (OperationMeta operation : operations)
-    {
-      if (convertedOperations.contains(operation.name)) continue;
-      EasyBeanAttribute attMeta = operation.getAnnotation(EasyBeanAttribute.class);
-      EasyBeanTransient easyBeanTransient = operation.getAnnotation(EasyBeanTransient.class);
-      EasyBeanAttribute readMeta = null;
-      EasyBeanAttribute writeMeta = null;
-
-      if ((easyBeanTransient == null) && (attMeta != null))
-      {
-        OperationMeta getter = null;
-        OperationMeta setter = null;
-
-        if (operation.method.getParameterTypes().length == 0)
-        {
-          Class returnType = operation.method.getReturnType();
-          if (returnType != void.class)
-          {
-            getter = operation;
-            for (OperationMeta o : operations)
-            {
-              if ((o != operation) && (o.getAnnotation(EasyBeanTransient.class) == null)
-                  && o.name.equals(operation.name) && (o.method.getParameterTypes().length == 1)
-                  & (o.method.getParameterTypes()[0] == returnType))
-              {
-                setter = o;
-                break;
-              }
-            }
-          }
-        }
-        else if ((operation.method.getParameterTypes().length == 1) && (operation.method.getReturnType() == void.class))
-        {
-          setter = operation;
-          Class parameterType = operation.method.getParameterTypes()[0];
-          for (OperationMeta o : operations)
-          {
-            if ((o != operation) && (o.getAnnotation(EasyBeanTransient.class) == null)
-                && o.name.equals(operation.name) && (o.method.getParameterTypes().length == 0)
-                && (o.method.getReturnType() == parameterType))
-            {
-              getter = o;
-              break;
-            }
-          }
-        }
-
-        if (getter != null | setter != null)
-        {
-          convertedOperations.add(operation.name);
-          AttributeMeta attribute = new AttributeMeta(operation.clazz, getter.method, setter.method, operation.name);
-
-          String name = capatalize(attribute.name);
-
-          String description = (readMeta != null) ? readMeta.description() : null;
-          if (nullEmpty(description)) description = (writeMeta != null) ? writeMeta.description() : null;
-          if (nullEmpty(description)) description = name;
-
-
-          boolean isReadable = (getter != null);
-          boolean isWriteable = (setter != null);
-
-          attributesInfo.add(new OpenMBeanAttributeInfoSupport(name, description, (OpenType<Long>) attribute.typeMapping.getOpenType(), isReadable, isWriteable, attribute.isIs(), getDescriptor(attribute.getAccessibleObjects())));
-
-          if (isReadable)
-          {
-            attributeReadMap.put(name, attribute);
-          }
-
-          if (isWriteable)
-          {
-            attributeWriteMap.put(name, attribute);
-          }
-        }
-
-      }
-    }
-    
-    for (Method method : beanClass.getMethods())
-    {
-      EasyBeanAttribute attMeta = method.getAnnotation(EasyBeanAttribute.class);
-      EasyBeanTransient attTransient = method.getAnnotation(EasyBeanTransient.class);
-      
-      if ((attMeta != null) && (attTransient == null))
-      {
-        String methodName = method.getName();
-        String packge = method.getDeclaringClass().getPackage().getName();
-        
-        if (!methodsAdded.contains(methodName) && !packge.startsWith("java.") && !packge.startsWith("javax."))
-        {
-          if ((method.getParameterTypes().length == 0) && (method.getReturnType() != void.class))
-          {
-            OpenTypeMapping typeMapping = openTypeMappingCreator.createOpenType(new TypeWrapper(method));
-            if (typeMapping != null)
-            {
-              String name = attMeta.name();
-              if (nullEmpty(name)) name = method.getName();
-              
-              name = capatalize(name);
-              
-              String description = attMeta.description();
-              if (nullEmpty(description)) description = name;
-  
-              attributesInfo.add(new OpenMBeanAttributeInfoSupport(name, description, (OpenType<Long>)typeMapping.getOpenType(), true, false, false, getDescriptor(method))); 
-              attributeReadMap.put(name, new MethodTypePair(method, typeMapping));
-            }
-          }
-          else if ((method.getParameterTypes().length == 1) && (method.getReturnType() == void.class))
-          {
-            OpenTypeMapping typeMapping = openTypeMappingCreator.createOpenType(new TypeWrapper(method));
-            if (typeMapping != null)
-            {
-              String name = attMeta.name();
-              if (nullEmpty(name)) name = method.getName();
-              
-              name = capatalize(name);
-              
-              String description = attMeta.description();
-              if (nullEmpty(description)) description = name;
-  
-              attributesInfo.add(new OpenMBeanAttributeInfoSupport(name, description, (OpenType<Long>)typeMapping.getOpenType(), false, true, false, getDescriptor(method))); 
-              attributeReadMap.put(name, new MethodTypePair(method, typeMapping));
-            }
-          }
-        }
-      }
-    }
-    
     Collections.sort(attributesInfo, new Comparator<OpenMBeanAttributeInfo>()
     {
       public int compare(OpenMBeanAttributeInfo a1, OpenMBeanAttributeInfo a2)
@@ -598,49 +430,37 @@ public class EasyBeanWrapper implements DynamicMBean, NotificationEmitter
         return a1.getName().compareTo(a2.getName());
       }
     });
-    
     return attributesInfo.toArray(new OpenMBeanAttributeInfoSupport[attributesInfo.size()]);
   }
 
-  OpenMBeanOperationInfo[] loadOperationInfo(List<OperationMeta> operations, Class beanClass)
+  OpenMBeanOperationInfo[] loadOperationInfo(List<BeanOperation> beanOperations)
   {
-    operationMap = new HashMap<String, List<OperationMeta>>();
+    operationMap = new HashMap<String, List<BeanOperation>>();
     List<OpenMBeanOperationInfo> operationsInfo = new ArrayList<OpenMBeanOperationInfo>();
     
-    for (OperationMeta operation : operations)
+    for (BeanOperation beanOperation : beanOperations)
     {
-      if (operation.typeMapping != null)
+      if (beanOperation.typeMapping != null)
       {
-        EasyBeanTransient metaTransient = operation.getAnnotation(EasyBeanTransient.class);
-        EasyBeanAttribute metaAtt = operation.getAnnotation(EasyBeanAttribute.class);
-        EasyBeanOperation metaOp = operation.getAnnotation(EasyBeanOperation.class);
-
-        if ((metaTransient == null) && (metaAtt == null) && ((metaOp != null) || (exposeLevel == EasyBeanExposureLevel.ALL)))
+        if (beanOperation.wasAnnotated || (exposeLevel == EasyBeanExposureLevel.ALL))
         {
-          String name = (metaOp == null) ? null : metaOp.name();
-          if (nullEmpty(name)) name = operation.name;
-
-          String description = (metaOp == null) ? null : metaOp.description();
-          if (nullEmpty(description)) description = name;
-
-          OpenMBeanParameterInfo[] paramsInfo = getParameterInfo(operation.method.getParameterTypes(), operation.method.getParameterAnnotations(), metaOp == null ? null : metaOp.parameterNames());
+          OpenMBeanParameterInfo[] paramsInfo = getParameterInfo(beanOperation.method.getParameterTypes(), beanOperation.method.getParameterAnnotations(), beanOperation.parameterNames, beanOperation.parameterDescriptions);
           if (paramsInfo != null)
           {
-            int impact = (metaOp == null) ? OperationImpact.UNKNOWN.getMBeanImpact() : metaOp.impact().getMBeanImpact();
-            operationsInfo.add(new OpenMBeanOperationInfoSupport(name, description, paramsInfo, operation.typeMapping.getOpenType(), impact, getDescriptor(operation.method)));
+            operationsInfo.add(new OpenMBeanOperationInfoSupport(beanOperation.name, beanOperation.description, paramsInfo, beanOperation.typeMapping.getOpenType(), beanOperation.impact.getMBeanImpact(), beanOperation.descriptor));
 
-            List<OperationMeta> operationMethods;
-            if (operationMap.containsKey(operation.name))
+            List<BeanOperation> operationsWithSameName;
+            if (operationMap.containsKey(beanOperation.name))
             {
-              operationMethods = operationMap.get(operation.name);
+              operationsWithSameName = operationMap.get(beanOperation.name);
             }
             else
             {
-              operationMethods = new ArrayList<OperationMeta>();
-              operationMap.put(name, operationMethods);
+              operationsWithSameName = new ArrayList<BeanOperation>();
+              operationMap.put(beanOperation.name, operationsWithSameName);
             }
 
-            operationMethods.add(operation);
+            operationsWithSameName.add(beanOperation);
           }
         }
       }
@@ -718,7 +538,7 @@ public class EasyBeanWrapper implements DynamicMBean, NotificationEmitter
   }
   
 
-  OpenMBeanParameterInfo[] getParameterInfo(Class<?>[] paramTypes, Annotation[][] annotations, String[] parameterNames)
+  OpenMBeanParameterInfo[] getParameterInfo(Class<?>[] paramTypes, Annotation[][] annotations, String[] parameterNames, String[] parameterDescriptions)
   {
     OpenMBeanParameterInfo[] paramsInfo = new OpenMBeanParameterInfo[paramTypes.length];
     
@@ -736,9 +556,17 @@ public class EasyBeanWrapper implements DynamicMBean, NotificationEmitter
       {
         name = parameterNames[i];
       }
-      
-      String description = name;
-      
+
+      String description;
+      if ((parameterDescriptions != null) && (parameterDescriptions.length > i))
+      {
+        description = parameterDescriptions[i];
+      }
+      else
+      {
+        description = name;
+      }
+
       for (Annotation annotation : annotations[i])
       {
         if (annotation instanceof P)
@@ -756,7 +584,7 @@ public class EasyBeanWrapper implements DynamicMBean, NotificationEmitter
     
     return paramsInfo;
   }
-  
+
   Descriptor getDescriptor(AccessibleObject... accessibleObjects)
   {
     List<Annotation> annotations = new ArrayList<Annotation>();

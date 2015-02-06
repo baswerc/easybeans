@@ -23,14 +23,14 @@ import org.baswell.easybeans.P;
 public class One implements OneMXBean
 {
   /*
-   * @EasyBeanAttribute public Name getName() { return new Name(); }
+   * @BeanAttribute public Name getName() { return new Name(); }
    * 
-   * @EasyBeanAttribute public List<Name> getNames() { List<Name> names = new ArrayList<Name>(); names.add(new Name()); names.add(new Name()); names.add(new
+   * @BeanAttribute public List<Name> getNames() { List<Name> names = new ArrayList<Name>(); names.add(new Name()); names.add(new Name()); names.add(new
    * Name()); names.add(new Name()); names.add(new Name()); names.add(new Name()); return names; }
    */
 
   /*
-   * @EasyBeanAttribute public Map<Name, List<? extends Name>> getMap() { Map<Name, List<? extends Name>> map = new HashMap<Name, List<? extends Name>>();
+   * @BeanAttribute public Map<Name, List<? extends Name>> getMap() { Map<Name, List<? extends Name>> map = new HashMap<Name, List<? extends Name>>();
    * map.put(new Name(), Arrays.asList(new Name(), new Name(), new Name())); map.put(new Name("yo", "word"), Arrays.asList(new Name(), new Name(), new Name()));
    * return map; }
    */
@@ -146,7 +146,7 @@ public class One implements OneMXBean
   }
 
   /*
-   * @EasyBeanAttribute public Map<Name, Map<String, List<? super Name>>> getArray() { Map<String, List<? super Name>> val1 = new HashMap(); val1.put("ONE",
+   * @BeanAttribute public Map<Name, Map<String, List<? super Name>>> getArray() { Map<String, List<? super Name>> val1 = new HashMap(); val1.put("ONE",
    * Arrays.asList(new Name(), new Name())); val1.put("TWO", Arrays.asList(new Name(), new Name()));
    * 
    * Map<String, List<? super Name>> val2 = new HashMap(); val2.put("ONE", Arrays.asList(new Name(), new Name())); val2.put("TWO", Arrays.asList(new Name(), new

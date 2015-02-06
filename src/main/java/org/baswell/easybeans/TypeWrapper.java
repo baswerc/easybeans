@@ -1,4 +1,4 @@
-package org.baswell.easybeans.impl;
+package org.baswell.easybeans;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
@@ -11,27 +11,27 @@ import java.lang.reflect.WildcardType;
 import java.util.ArrayList;
 import java.util.List;
 
-public class TypeWrapper
+class TypeWrapper
 {
   private Type type;
   private Class rawClass;
   private Field field;
   private Method attributeMethod;
   
-  public TypeWrapper(Type type)
+  TypeWrapper(Type type)
   {
     this.type = type;
     rawClass = findRawClass(type);
   }
 
-  public TypeWrapper(Field field)
+  TypeWrapper(Field field)
   {
     this.field = field;
     type = field.getGenericType();
     rawClass = field.getType();
   }
   
-  public TypeWrapper(Method attributeMethod)
+  TypeWrapper(Method attributeMethod)
   {
     this.attributeMethod = attributeMethod;
     
@@ -47,17 +47,17 @@ public class TypeWrapper
     }
   }
 
-  public Type getType()
+  Type getType()
   {
     return type;
   }
   
-  public Class getRawClass()
+  Class getRawClass()
   {
     return rawClass;
   }
 
-  public <T extends Annotation> T getAnnotation(Class<T> annotationClass)
+  <T extends Annotation> T getAnnotation(Class<T> annotationClass)
   {
     T annotation = null;
     

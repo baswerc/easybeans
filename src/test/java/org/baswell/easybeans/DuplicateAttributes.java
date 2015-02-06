@@ -1,4 +1,4 @@
-package org.baswell.easybeans.impl.meta;
+package org.baswell.easybeans;
 
 import org.baswell.easybeans.EasyBeanAttribute;
 

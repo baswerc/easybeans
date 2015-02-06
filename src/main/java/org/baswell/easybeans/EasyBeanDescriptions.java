@@ -6,7 +6,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Wrapper to specify multiple descriptor name value pairs per type, constructor, method, etc. It's pretty
+ * Wrapper to specify multiple descriptor name value pairs per type, constructor, constructor, etc. It's pretty
  * lame that we can't have multiple annotations of the same type at the same location.
  * 
  * @author Corey Baswell
