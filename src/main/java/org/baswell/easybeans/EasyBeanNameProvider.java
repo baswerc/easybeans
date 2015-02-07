@@ -1,5 +1,6 @@
 package org.baswell.easybeans;
 
+import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 
 /**
@@ -9,5 +10,5 @@ import javax.management.ObjectName;
  */
 public interface EasyBeanNameProvider
 {
-  ObjectName getObjectName();
+  ObjectName getObjectName() throws MalformedObjectNameException;
 }

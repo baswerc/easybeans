@@ -74,8 +74,12 @@ public class EasyBeanWrapper implements DynamicMBean
       if (bean instanceof EasyBeanNameProvider)
       {
         objectName = ((EasyBeanNameProvider) bean).getObjectName();
+        if (objectName == null)
+        {
+          throw new InvalidEasyBeanNameException(clazz, "Object name cannot be null.", null);
+        }
       }
-      else if ((easyBeanAnnotation != null) && !nullEmpty(easyBeanAnnotation.objectName()))
+      else
       {
         objectName = new ObjectName(objectNameString);
       }
