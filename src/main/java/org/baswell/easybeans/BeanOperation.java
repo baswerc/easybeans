@@ -3,7 +3,7 @@ package org.baswell.easybeans;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
-import static org.baswell.easybeans.SharedMethods.hasContent;
+import static org.baswell.easybeans.SharedMethods.*;
 import static org.baswell.easybeans.OpenTypeMappingCreator.createOpenType;
 
 class BeanOperation extends BeanMember

@@ -9,14 +9,38 @@ import java.util.List;
 
 import static org.baswell.easybeans.SharedMethods.getDescriptor;
 
-public class EasyBeanNotificationWrapper extends EasyBeanWrapper implements NotificationEmitter
+public class EasyBeanNotificationWrapper extends EasyBeanWrapper implements NotificationEmitter, NotificationBridge
 {
   List<NotificationListenerEntry> listenerEntries;
 
   public EasyBeanNotificationWrapper(Object pojo) throws EasyBeanDefinitionException
   {
     super(pojo);
+    if (pojo instanceof  NotificationBridgeReceiver)
+    {
+      ((NotificationBridgeReceiver)pojo).setBridge(this);
+    }
   }
+
+
+  @Override
+  public void notify(String message)
+  {
+
+  }
+
+  @Override
+  public void notify(String type, String message)
+  {
+
+  }
+
+  @Override
+  public void notify(Notification notification)
+  {
+
+  }
+
 
   /**
    *
@@ -156,7 +180,7 @@ public class EasyBeanNotificationWrapper extends EasyBeanWrapper implements Noti
       this.handback = handback;
     }
 
-    public void notifyIfNotFiltered(Notification notification)
+    void notifyIfNotFiltered(Notification notification)
     {
       if ((filter == null) || (filter.isNotificationEnabled(notification)))
       {
@@ -164,12 +188,12 @@ public class EasyBeanNotificationWrapper extends EasyBeanWrapper implements Noti
       }
     }
 
-    public boolean equals(NotificationListener listener, NotificationFilter filter, Object handback)
+    boolean equals(NotificationListener listener, NotificationFilter filter, Object handback)
     {
       return ((this.listener == listener) && (this.filter == filter) && (this.handback == handback));
     }
 
-    public boolean equals(NotificationListener listener)
+    boolean equals(NotificationListener listener)
     {
       return (this.listener == listener);
     }

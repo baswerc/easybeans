@@ -93,7 +93,7 @@ public class EasyBeanWrapper implements DynamicMBean
       OpenMBeanConstructorInfo[] constructorInfo = loadConstructorInfo(beanDefinition.constructors);
       OpenMBeanAttributeInfo[] attributeInfo = loadAttributeInfo(beanDefinition.attributes);
       OpenMBeanOperationInfo[] opInfo = loadOperationInfo(beanDefinition.operations);
-      MBeanNotificationInfo[] notificationInfo = loadNotificationInfo(clazz);
+      MBeanNotificationInfo[] notificationInfo = loadNotificationInfo();
 
       info = new OpenMBeanInfoSupport(className, mbeanDescription, attributeInfo, constructorInfo, opInfo, notificationInfo, beanDefinition.descriptor);
     }
@@ -433,7 +433,7 @@ public class EasyBeanWrapper implements DynamicMBean
     return paramsInfo;
   }
 
-  MBeanNotificationInfo[] loadNotificationInfo(Class clazz)
+  MBeanNotificationInfo[] loadNotificationInfo()
   {
     return new MBeanNotificationInfo[0];
   }

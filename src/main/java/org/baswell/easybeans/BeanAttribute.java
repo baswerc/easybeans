@@ -5,8 +5,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 import static org.baswell.easybeans.OpenTypeMappingCreator.createOpenType;
-import static org.baswell.easybeans.SharedMethods.capatalize;
-import static org.baswell.easybeans.SharedMethods.hasContent;
+import static org.baswell.easybeans.SharedMethods.*;
 
 class BeanAttribute extends BeanMember
 {

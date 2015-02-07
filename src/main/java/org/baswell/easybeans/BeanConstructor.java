@@ -4,7 +4,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 
 import static org.baswell.easybeans.SharedMethods.hasContent;
-import static org.baswell.easybeans.OpenTypeMappingCreator.createOpenType;
+import static org.baswell.easybeans.SharedMethods.*;
 
 public class BeanConstructor extends BeanMember
 {
