@@ -37,64 +37,108 @@ class BeanDefinition
     }
     this.constructors = constructors;
 
-    List<Method> publicMethods = getPublicNonTransientMethods(clazz);
+    List<Method> allMethods = getAllMethods(clazz);
     List<BeanOperation> operations = new ArrayList<BeanOperation>();
     List<BeanAttribute> attributes = new ArrayList<BeanAttribute>();
 
     Set<String> attributeNamesCreated = new HashSet<String>();
 
-    for (Method publicMethod : publicMethods)
+    for (Method method : allMethods)
     {
-      if (isStandardGetter(publicMethod))
+      if (Modifier.isPublic(method.getModifiers()))
       {
-        String getterAttName = getGetterSetterName(publicMethod.getName());
-        if (!attributeNamesCreated.contains(getterAttName.toLowerCase()))
+        if (method.getAnnotation(EasyBeanTransient.class) == null)
         {
-          attributeNamesCreated.add(getterAttName.toLowerCase());
-          Method setterMethod = null;
-          for (Method anotherPublicMethod : publicMethods)
+          EasyBeanOperation operationMeta = method.getAnnotation(EasyBeanOperation.class);
+          EasyBeanAttribute attributeMeta = method.getAnnotation(EasyBeanAttribute.class);
+
+          if ((operationMeta != null) & (attributeMeta != null))
           {
-            if (isStandardSetter(anotherPublicMethod) && getGetterSetterName(anotherPublicMethod.getName()).equals(getterAttName))
+            throw new InvalidEasyBeanAnnotation(clazz, "Method " + method.getName() + " is annotated with EasyBeanAttribute and EasyBeanOperation.");
+          }
+          else if ((operationMeta == null) && isStandardGetter(method))
+          {
+            String getterAttName = getGetterSetterName(method.getName());
+            if (!attributeNamesCreated.contains(getterAttName.toLowerCase()))
             {
-              setterMethod = anotherPublicMethod;
-              break;
+              attributeNamesCreated.add(getterAttName.toLowerCase());
+              Method setterMethod = null;
+              for (Method anotherPublicMethod : allMethods)
+              {
+                if (isStandardSetter(anotherPublicMethod) && getGetterSetterName(anotherPublicMethod.getName()).equals(getterAttName))
+                {
+                  setterMethod = anotherPublicMethod;
+                  break;
+                }
+              }
+
+              attributes.add(new BeanAttribute(clazz, method, setterMethod, getterAttName));
             }
           }
-
-          attributes.add(new BeanAttribute(clazz, publicMethod, setterMethod, getterAttName));
-        }
-      }
-      else if (isStandardSetter(publicMethod))
-      {
-        String setterAttName = getGetterSetterName(publicMethod.getName());
-        if (!attributeNamesCreated.contains(setterAttName.toLowerCase()))
-        {
-          attributeNamesCreated.add(setterAttName.toLowerCase());
-          Method getterMethod = null;
-          for (Method anotherPublicMethod : publicMethods)
+          else if ((operationMeta == null) && isStandardSetter(method))
           {
-            if (isStandardGetter(anotherPublicMethod) && getGetterSetterName(anotherPublicMethod.getName()).equals(setterAttName))
+            String setterAttName = getGetterSetterName(method.getName());
+            if (!attributeNamesCreated.contains(setterAttName.toLowerCase()))
             {
-              getterMethod = anotherPublicMethod;
-              break;
+              attributeNamesCreated.add(setterAttName.toLowerCase());
+              Method getterMethod = null;
+              for (Method anotherPublicMethod : allMethods)
+              {
+                if (isStandardGetter(anotherPublicMethod) && getGetterSetterName(anotherPublicMethod.getName()).equals(setterAttName))
+                {
+                  getterMethod = anotherPublicMethod;
+                  break;
+                }
+              }
+
+              attributes.add(new BeanAttribute(clazz, getterMethod, method, setterAttName));
             }
           }
-
-          attributes.add(new BeanAttribute(clazz, getterMethod, publicMethod, setterAttName));
+          else
+          {
+            operations.add(new BeanOperation(clazz, method));
+          }
+        }
+        else if (method.getAnnotation(EasyBeanAttribute.class) != null)
+        {
+          throw new InvalidEasyBeanAnnotation(clazz, "Method " + method.getName() + " is annotated with EasyBeanTransient and EasyBeanAttribute.");
+        }
+        else if (method.getAnnotation(EasyBeanOperation.class) != null)
+        {
+          throw new InvalidEasyBeanAnnotation(clazz, "Method " + method.getName() + " is annotated with EasyBeanTransient and EasyBeanOperation.");
         }
       }
-      else
+      else if (method.getAnnotation(EasyBeanAttribute.class) != null)
       {
-        operations.add(new BeanOperation(clazz, publicMethod));
+        throw new InvalidEasyBeanAnnotation(clazz, "Non-public method " + method.getName() + " is annotated with EasyBeanAttribute.");
+      }
+      else if (method.getAnnotation(EasyBeanOperation.class) != null)
+      {
+        throw new InvalidEasyBeanAnnotation(clazz, "Non-public method " + method.getName() + " is annotated with EasyBeanOperation.");
       }
     }
 
-    List<Field> publicFields = getPublicNonTransientFields(clazz);
-    for (Field field : publicFields)
+    List<Field> allFields = getAllFields(clazz);
+    for (Field field : allFields)
     {
-      if (!attributeNamesCreated.contains(field.getName().toLowerCase()))
+      if (Modifier.isPublic(field.getModifiers()))
       {
-        attributes.add(new BeanAttribute(clazz, field));
+        EasyBeanTransient transientAnnotation = field.getAnnotation(EasyBeanTransient.class);
+        if (transientAnnotation == null)
+        {
+          if (!attributeNamesCreated.contains(field.getName().toLowerCase()))
+          {
+            attributes.add(new BeanAttribute(clazz, field));
+          }
+        }
+        else if (field.getAnnotation(EasyBeanAttribute.class) != null)
+        {
+          throw new InvalidEasyBeanAnnotation(clazz, "Field " + field.getName() + " is annotated with EasyBeanTransient and EasyBeanAttribute.");
+        }
+      }
+      else if (field.getAnnotation(EasyBeanAttribute.class) != null)
+      {
+        throw new InvalidEasyBeanAnnotation(clazz, "Non-public field " + field.getName() + " is annotated with EasyBeanAttribute.");
       }
     }
 
@@ -166,18 +210,15 @@ class BeanDefinition
     return publicConstructors;
   }
 
-  static List<Field> getPublicNonTransientFields(Class clazz)
+  static List<Field> getAllFields(Class clazz)
   {
-    List<Field> publicFields = new ArrayList<Field>();
-    Field[] fields = clazz.getFields();
+    List<Field> allFields = new ArrayList<Field>();
+    Field[] fields = clazz.getDeclaredFields();
     if (fields !=  null)
     {
       for (Field field : fields)
       {
-        if (field.getAnnotation(EasyBeanTransient.class) == null)
-        {
-        publicFields.add(field);
-        }
+        allFields.add(field);
       }
     }
 
@@ -187,25 +228,22 @@ class BeanDefinition
       String declaringPackage = superClass.getPackage().getName();
       if (!declaringPackage.startsWith("java.") && !declaringPackage.startsWith("javax."))
       {
-        publicFields.addAll(getPublicNonTransientFields(superClass));
+        allFields.addAll(getAllFields(superClass));
       }
     }
 
-    return publicFields;
+    return allFields;
   }
 
-  static List<Method> getPublicNonTransientMethods(Class clazz)
+  static List<Method> getAllMethods(Class clazz)
   {
-    List<Method> publicMethods = new ArrayList<Method>();
+    List<Method> allMethods = new ArrayList<Method>();
     Method[] methods = clazz.getDeclaredMethods();
     if (methods != null)
     {
       for (Method method : methods)
       {
-        if (Modifier.isPublic(method.getModifiers()) && (method.getAnnotation(EasyBeanTransient.class) == null))
-        {
-          publicMethods.add(method);
-        }
+        allMethods.add(method);
       }
     }
 
@@ -215,10 +253,10 @@ class BeanDefinition
       String declaringPackage = superClass.getPackage().getName();
       if (!declaringPackage.startsWith("java.") && !declaringPackage.startsWith("javax."))
       {
-        publicMethods.addAll(getPublicNonTransientMethods(superClass));
+        allMethods.addAll(getAllMethods(superClass));
       }
     }
 
-    return publicMethods;
+    return allMethods;
   }
 }

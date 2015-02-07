@@ -10,7 +10,7 @@ import java.lang.annotation.Target;
  * by the {@link EasyBeanWrapper}.
  * 
  */
-@Target({ElementType.TYPE, ElementType.CONSTRUCTOR, ElementType.METHOD})
+@Target({ElementType.TYPE, ElementType.CONSTRUCTOR, ElementType.METHOD, ElementType.FIELD})
 @Retention(value=RetentionPolicy.RUNTIME)
 public @interface EasyBeanTransient
 {}

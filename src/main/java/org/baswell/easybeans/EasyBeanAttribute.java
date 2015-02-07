@@ -11,7 +11,7 @@ import java.lang.annotation.Target;
  * @author Corey Baswell
  *
  */
-@Target({ElementType.METHOD})
+@Target({ElementType.METHOD, ElementType.FIELD})
 @Retention(value=RetentionPolicy.RUNTIME)
 public @interface EasyBeanAttribute  
 {
