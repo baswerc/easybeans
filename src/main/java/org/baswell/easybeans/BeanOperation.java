@@ -42,7 +42,7 @@ class BeanOperation extends BeanMember
       impact = OperationImpact.UNKNOWN;
     }
 
-    typeMapping = createOpenType(new TypeWrapper(method));
+    typeMapping = createOpenType(new EasyBeanOpenTypeWrapper(method));
     descriptor = getDescriptor(method);
   }
 

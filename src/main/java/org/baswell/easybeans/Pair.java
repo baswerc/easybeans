@@ -12,13 +12,8 @@ class Pair<X, Y>
     this.y = y;
   }
 
-  X getX()
+  static <A, B> Pair<A, B> pair(A a, B b)
   {
-    return x;
-  }
-
-  Y getY()
-  {
-    return y;
+    return new Pair<A, B>(a, b);
   }
 }

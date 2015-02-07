@@ -6,15 +6,15 @@ import java.lang.reflect.InvocationTargetException;
 import static org.baswell.easybeans.SharedMethods.hasContent;
 import static org.baswell.easybeans.SharedMethods.*;
 
-public class BeanConstructor extends BeanMember
+class BeanConstructor extends BeanMember
 {
-  public final Constructor constructor;
+  final Constructor constructor;
 
   final String[] parameterNames;
 
   final String[] parameterDescriptions;
 
-  public BeanConstructor(Class clazz, Constructor constructor)
+  BeanConstructor(Class clazz, Constructor constructor)
   {
     super(clazz);
 
@@ -41,7 +41,7 @@ public class BeanConstructor extends BeanMember
     descriptor = getDescriptor(constructor);
   }
 
-  public void newInstance(Object pojo, Object... parameters) throws IllegalAccessException, InvocationTargetException, InstantiationException
+  void newInstance(Object pojo, Object... parameters) throws IllegalAccessException, InvocationTargetException, InstantiationException
   {
     constructor.newInstance(pojo, parameters);
   }

@@ -1,9 +1,9 @@
 package org.baswell.easybeans.beans;
 
 import org.baswell.easybeans.EasyBean;
-import org.baswell.easybeans.EasyBeanExposureLevel;
+import org.baswell.easybeans.EasyBeanExposure;
 
-@EasyBean(exposeLevel = EasyBeanExposureLevel.ALL)
+@EasyBean(expose = EasyBeanExposure.ALL)
 public class PublicAttributes
 {
   public String one = "1";

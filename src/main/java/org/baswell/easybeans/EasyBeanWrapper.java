@@ -6,38 +6,19 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
-import static org.baswell.easybeans.SharedMethods.getDescriptor;
-import static org.baswell.easybeans.SharedMethods.nullEmpty;
+import static org.baswell.easybeans.SharedMethods.*;
+import static org.baswell.easybeans.OpenTypeMappingCreator.*;
 
 /**
- * Wraps plain a Java object to expose their attributes and operations as a DynamicMBean. If you need support for notifications
+ * Wraps a Java object to expose their attributes and operations as a DynamicMBean. If you want to broadcast JMX notifications
  * use {@link EasyBeanNotificationWrapper}
  *
  */
 public class EasyBeanWrapper implements DynamicMBean
 {
-  static Map<String, Class> classEquivalentMap = new ConcurrentHashMap<String, Class>();
-  static
-  {
-    classEquivalentMap.put(Byte.class.getCanonicalName(), Byte.class);
-    classEquivalentMap.put(boolean.class.getCanonicalName(), Boolean.class);
-    classEquivalentMap.put(Boolean.class.getCanonicalName(), Boolean.class);
-    classEquivalentMap.put(short.class.getCanonicalName(), Short.class);
-    classEquivalentMap.put(Short.class.getCanonicalName(), Short.class);
-    classEquivalentMap.put(int.class.getCanonicalName(), Integer.class);
-    classEquivalentMap.put(Integer.class.getCanonicalName(), Integer.class);
-    classEquivalentMap.put(long.class.getCanonicalName(), Long.class);
-    classEquivalentMap.put(Long.class.getCanonicalName(), Long.class);
-    classEquivalentMap.put(float.class.getCanonicalName(), Float.class);
-    classEquivalentMap.put(Float.class.getCanonicalName(), Float.class);
-    classEquivalentMap.put(double.class.getCanonicalName(), Double.class);
-    classEquivalentMap.put(Double.class.getCanonicalName(), Double.class);
-  }
-
-  Object pojo;
-  EasyBeanExposureLevel exposeLevel;
+  Object bean;
+  EasyBeanExposure exposure;
 
   MBeanInfo mBeanInfo;
   ObjectName objectName;
@@ -46,47 +27,75 @@ public class EasyBeanWrapper implements DynamicMBean
   Map<String, BeanAttribute> attributeWriteMap;
   Map<String, List<BeanOperation>> operationMap;
   
-  OpenTypeMappingCreator openTypeMappingCreator;
   OpenTypeMapper openTypeMapper;
-  
+
   /**
-   * 
-   * @param pojo The annotated object to make JMX accessible.
-   * @throws EasyBeanDefinitionException If the {@link ObjectName} defined in {@link EasyBean} is invalid.
+   *
+   * @param bean
+   * @throws InvalidEasyBeanNameException
+   * @throws InvalidEasyBeanAnnotation
+   * @throws InvalidEasyBeanOpenType
    */
-  public EasyBeanWrapper(Object pojo) throws EasyBeanDefinitionException
+  public EasyBeanWrapper(Object bean) throws InvalidEasyBeanNameException, InvalidEasyBeanAnnotation, InvalidEasyBeanOpenType
   {
-    this.pojo = pojo;
+    this(bean, null);
+  }
+
+  /**
+   *
+   * @param bean
+   * @param exposure
+   * @throws InvalidEasyBeanNameException
+   * @throws InvalidEasyBeanAnnotation
+   * @throws InvalidEasyBeanOpenType
+   */
+  public EasyBeanWrapper(Object bean, EasyBeanExposure exposure) throws InvalidEasyBeanNameException, InvalidEasyBeanAnnotation, InvalidEasyBeanOpenType
+  {
+    this.bean = bean;
     openTypeMapper = new OpenTypeMapper();
     
-    Class clazz = pojo.getClass();
+    Class clazz = bean.getClass();
     String className = clazz.getCanonicalName();
-    String mbeanDescription = null;
-    EasyBean mbeanAnnotation = (EasyBean)clazz.getAnnotation(EasyBean.class);
-    
+    String description = null;
+    EasyBean easyBeanAnnotation = (EasyBean)clazz.getAnnotation(EasyBean.class);
+
+    String objectNameString = null;
+    if ((easyBeanAnnotation != null) && !nullEmpty(easyBeanAnnotation.objectName()))
+    {
+      objectNameString = easyBeanAnnotation.objectName();
+    }
+    else
+    {
+      objectNameString = clazz.getPackage().getName() + ":Name=" + clazz.getSimpleName();
+    }
+
     try
     {
-      if (pojo instanceof EasyBeanNameProvider)
+      if (bean instanceof EasyBeanNameProvider)
       {
-        objectName = ((EasyBeanNameProvider)pojo).getObjectName();
+        objectName = ((EasyBeanNameProvider) bean).getObjectName();
       }
-      else if ((mbeanAnnotation != null) && !nullEmpty(mbeanAnnotation.objectName()))
+      else if ((easyBeanAnnotation != null) && !nullEmpty(easyBeanAnnotation.objectName()))
       {
-        objectName = new ObjectName(mbeanAnnotation.objectName());
+        objectName = new ObjectName(objectNameString);
+      }
+
+      if (exposure != null)
+      {
+        this.exposure = exposure;
+      }
+      else if (easyBeanAnnotation != null)
+      {
+        this.exposure = easyBeanAnnotation.expose();
       }
       else
       {
-        objectName = new ObjectName(clazz.getPackage().getName() + ":Name=" + clazz.getSimpleName());
+        this.exposure = EasyBeanExposure.ANNOTATED;
       }
-      
-      if(mbeanAnnotation != null)
+
+      if(easyBeanAnnotation != null)
       {
-        mbeanDescription = mbeanAnnotation.description();
-        exposeLevel = mbeanAnnotation.exposeLevel();
-      }
-      else
-      {
-        exposeLevel = EasyBeanExposureLevel.ANNOTATED;
+        description = easyBeanAnnotation.description();
       }
 
       BeanDefinition beanDefinition = new BeanDefinition(clazz);
@@ -95,23 +104,15 @@ public class EasyBeanWrapper implements DynamicMBean
       OpenMBeanOperationInfo[] opInfo = loadOperationInfo(beanDefinition.operations);
       MBeanNotificationInfo[] notificationInfo = loadNotificationInfo();
 
-      mBeanInfo = new OpenMBeanInfoSupport(className, mbeanDescription, attributeInfo, constructorInfo, opInfo, notificationInfo, beanDefinition.descriptor);
+      mBeanInfo = new OpenMBeanInfoSupport(className, description, attributeInfo, constructorInfo, opInfo, notificationInfo, beanDefinition.descriptor);
     }
     catch (MalformedObjectNameException monexc)
     {
-      throw new EasyBeanDefinitionException(monexc);
+      throw new InvalidEasyBeanNameException(clazz, objectNameString, monexc);
     }
   }
   
-  public ObjectName getObjectName()
-  {
-    return objectName;
-  }
-
-  /**
-   * 
-   * @see javax.management.DynamicMBean#getAttribute(String)
-   */
+  @Override
   public Object getAttribute(String attribute) throws AttributeNotFoundException, MBeanException, ReflectionException
   {
     if (!attributeReadMap.containsKey(attribute))
@@ -121,7 +122,7 @@ public class EasyBeanWrapper implements DynamicMBean
     try
     {
       BeanAttribute beanAttribute = attributeReadMap.get(attribute);
-      Object value = beanAttribute.get(pojo);
+      Object value = beanAttribute.get(bean);
       return openTypeMapper.map(value, beanAttribute.typeMapping);
     }
     catch (Exception exc)
@@ -131,10 +132,7 @@ public class EasyBeanWrapper implements DynamicMBean
     }
   }
 
-  /**
-   * 
-   * @see javax.management.DynamicMBean#getAttributes(String[])
-   */
+  @Override
   public AttributeList getAttributes(String[] attributes)
   {
     AttributeList attList = new AttributeList();
@@ -192,7 +190,7 @@ public class EasyBeanWrapper implements DynamicMBean
         {
           try
           {
-            Object value = method.invoke(pojo, params);
+            Object value = method.invoke(bean, params);
             return openTypeMapper.map(value, operation.typeMapping);
           }
           catch (Throwable exc)
@@ -216,6 +214,7 @@ public class EasyBeanWrapper implements DynamicMBean
    * 
    * @see javax.management.DynamicMBean#setAttribute(javax.management.Attribute)
    */
+  @Override
   public void setAttribute(Attribute attribute) throws AttributeNotFoundException, InvalidAttributeValueException, MBeanException, ReflectionException
   {
     String attName = attribute.getName();
@@ -227,7 +226,7 @@ public class EasyBeanWrapper implements DynamicMBean
     {
       try
       {
-        attributeWriteMap.get(attName).set(pojo, attribute.getValue());
+        attributeWriteMap.get(attName).set(bean, attribute.getValue());
       }
       catch (Exception exc)
       {
@@ -241,6 +240,7 @@ public class EasyBeanWrapper implements DynamicMBean
    * 
    * @see javax.management.DynamicMBean#setAttributes(javax.management.AttributeList)
    */
+  @Override
   public AttributeList setAttributes(AttributeList attributes)
   {
     AttributeList updateAttributes = new AttributeList();
@@ -262,13 +262,19 @@ public class EasyBeanWrapper implements DynamicMBean
     return updateAttributes;
   }
 
+
+  MBeanNotificationInfo[] loadNotificationInfo()
+  {
+    return new MBeanNotificationInfo[0];
+  }
+
   OpenMBeanConstructorInfo[] loadConstructorInfo(List<BeanConstructor> beanConstructors)
   {
     List<OpenMBeanConstructorInfo> constructorsInfo = new ArrayList<OpenMBeanConstructorInfo>();
     
     for (BeanConstructor beanConstructor : beanConstructors)
     {
-      if (beanConstructor.wasAnnotated || (exposeLevel == EasyBeanExposureLevel.ALL))
+      if (beanConstructor.wasAnnotated || (exposure == EasyBeanExposure.ALL))
       {
         OpenMBeanParameterInfo[] paramsInfo = getParameterInfo(beanConstructor.constructor.getParameterTypes(), beanConstructor.constructor.getParameterAnnotations(), beanConstructor.parameterNames, beanConstructor.parameterDescriptions);
         if (paramsInfo != null)
@@ -292,8 +298,8 @@ public class EasyBeanWrapper implements DynamicMBean
     {
       if (beanAttribute.typeMapping != null)
       {
-        boolean isReadable = beanAttribute.hasReadAccess() && (beanAttribute.wasReadAnnotated || (exposeLevel != EasyBeanExposureLevel.ANNOTATED));
-        boolean isWriteable = beanAttribute.hasWriteAccess() && (beanAttribute.wasWriteAnnotated || (exposeLevel == EasyBeanExposureLevel.ALL));
+        boolean isReadable = beanAttribute.hasReadAccess() && (beanAttribute.wasReadAnnotated || (exposure != EasyBeanExposure.ANNOTATED));
+        boolean isWriteable = beanAttribute.hasWriteAccess() && (beanAttribute.wasWriteAnnotated || (exposure == EasyBeanExposure.ALL));
 
         if (isReadable || isWriteable)
         {
@@ -331,7 +337,7 @@ public class EasyBeanWrapper implements DynamicMBean
     {
       if (beanOperation.typeMapping != null)
       {
-        if (beanOperation.wasAnnotated || (exposeLevel == EasyBeanExposureLevel.ALL))
+        if (beanOperation.wasAnnotated || (exposure == EasyBeanExposure.ALL))
         {
           OpenMBeanParameterInfo[] paramsInfo = getParameterInfo(beanOperation.method.getParameterTypes(), beanOperation.method.getParameterAnnotations(), beanOperation.parameterNames, beanOperation.parameterDescriptions);
           if (paramsInfo != null)
@@ -388,14 +394,14 @@ public class EasyBeanWrapper implements DynamicMBean
     return operationsInfo.toArray(new OpenMBeanOperationInfo[operationsInfo.size()]);
   }
   
-  OpenMBeanParameterInfo[] getParameterInfo(Class<?>[] paramTypes, Annotation[][] annotations, String[] parameterNames, String[] parameterDescriptions)
+  static OpenMBeanParameterInfo[] getParameterInfo(Class<?>[] paramTypes, Annotation[][] annotations, String[] parameterNames, String[] parameterDescriptions)
   {
     OpenMBeanParameterInfo[] paramsInfo = new OpenMBeanParameterInfo[paramTypes.length];
     
     for (int i = 0; i < paramTypes.length; i++)
     {
       String name = "arg" + i;
-      OpenTypeMapping typeMapping = openTypeMappingCreator.createOpenType(new TypeWrapper(paramTypes[i]));
+      OpenTypeMapping typeMapping = createOpenType(new EasyBeanOpenTypeWrapper(paramTypes[i]));
       
       if (typeMapping == null)
       {
@@ -433,26 +439,5 @@ public class EasyBeanWrapper implements DynamicMBean
     }
     
     return paramsInfo;
-  }
-
-  MBeanNotificationInfo[] loadNotificationInfo()
-  {
-    return new MBeanNotificationInfo[0];
-  }
-
-  boolean classesEquivalent(Class<?> clazz, String canonicalName)
-  {
-    if (clazz.getCanonicalName().equals(canonicalName))
-    {
-      return true;
-    }
-    else if (classEquivalentMap.containsKey(clazz.getCanonicalName()) && classEquivalentMap.containsKey(canonicalName))
-    {
-      return classEquivalentMap.get(clazz.getCanonicalName()) == classEquivalentMap.get(canonicalName);
-    }
-    else
-    {
-      return false;
-    }
   }
 }

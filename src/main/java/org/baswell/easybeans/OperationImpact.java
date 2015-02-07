@@ -6,17 +6,27 @@ import javax.management.MBeanOperationInfo;
  * The enumeration of the {@link javax.management.MBeanOperationInfo} impact integer values.
  * 
  * @see javax.management.MBeanOperationInfo#getImpact()
- * @see javax.management.MBeanOperationInfo#ACTION
- * @see javax.management.MBeanOperationInfo#ACTION_INFO
- * @see javax.management.MBeanOperationInfo#INFO
- * @see javax.management.MBeanOperationInfo#UNKNOWN
- *
  */
 public enum OperationImpact
 {
+  /**
+   * @see javax.management.MBeanOperationInfo#ACTION
+   */
   ACTION,
+
+  /**
+   * @see javax.management.MBeanOperationInfo#ACTION_INFO
+   */
   ACTION_INFO,
+
+  /**
+   * @see javax.management.MBeanOperationInfo#INFO
+   */
   INFO,
+
+  /**
+   * @see javax.management.MBeanOperationInfo#UNKNOWN
+   */
   UNKNOWN;
   
   public int getMBeanImpact()

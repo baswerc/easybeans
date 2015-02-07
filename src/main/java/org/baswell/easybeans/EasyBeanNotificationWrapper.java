@@ -16,7 +16,7 @@ public class EasyBeanNotificationWrapper extends EasyBeanWrapper implements Noti
 
   private AtomicLong sequenceNumberGenerator;
 
-  public EasyBeanNotificationWrapper(Object pojo) throws EasyBeanDefinitionException
+  public EasyBeanNotificationWrapper(Object pojo) throws InvalidEasyBeanNameException, InvalidEasyBeanAnnotation, InvalidEasyBeanOpenType
   {
     super(pojo);
 
@@ -52,12 +52,12 @@ public class EasyBeanNotificationWrapper extends EasyBeanWrapper implements Noti
   @Override
   public void addNotificationListener(NotificationListener listener, NotificationFilter filter, Object handback) throws IllegalArgumentException
   {
-    if (pojo instanceof NotificationBroadcaster)
+    if (bean instanceof NotificationBroadcaster)
     {
-      ((NotificationBroadcaster) pojo).addNotificationListener(listener, filter, handback);
+      ((NotificationBroadcaster) bean).addNotificationListener(listener, filter, handback);
     }
 
-    if (pojo instanceof EasyBeansNotifierUser)
+    if (bean instanceof EasyBeansNotifierUser)
     {
       notificationListenerData.add(new NotificationListenerDatum(listener, filter, handback));
     }
@@ -66,16 +66,16 @@ public class EasyBeanNotificationWrapper extends EasyBeanWrapper implements Noti
   @Override
   public void removeNotificationListener(NotificationListener listener, NotificationFilter filter, Object handback) throws ListenerNotFoundException
   {
-    if (pojo instanceof NotificationEmitter)
+    if (bean instanceof NotificationEmitter)
     {
-      ((NotificationEmitter) pojo).removeNotificationListener(listener, filter, handback);
+      ((NotificationEmitter) bean).removeNotificationListener(listener, filter, handback);
     }
-    else if (pojo instanceof NotificationBroadcaster)
+    else if (bean instanceof NotificationBroadcaster)
     {
-      ((NotificationBroadcaster) pojo).removeNotificationListener(listener);
+      ((NotificationBroadcaster) bean).removeNotificationListener(listener);
     }
 
-    if (pojo instanceof EasyBeansNotifierUser)
+    if (bean instanceof EasyBeansNotifierUser)
     {
       for (int i = (notificationListenerData.size() - 1); i >= 0; i--)
       {
@@ -91,12 +91,12 @@ public class EasyBeanNotificationWrapper extends EasyBeanWrapper implements Noti
   @Override
   public void removeNotificationListener(NotificationListener listener) throws ListenerNotFoundException
   {
-    if (pojo instanceof NotificationBroadcaster)
+    if (bean instanceof NotificationBroadcaster)
     {
-      ((NotificationBroadcaster) pojo).removeNotificationListener(listener);
+      ((NotificationBroadcaster) bean).removeNotificationListener(listener);
     }
 
-    if (pojo instanceof EasyBeansNotifierUser)
+    if (bean instanceof EasyBeansNotifierUser)
     {
       for (int i = (notificationListenerData.size() - 1); i >= 0; i--)
       {
@@ -114,9 +114,9 @@ public class EasyBeanNotificationWrapper extends EasyBeanWrapper implements Noti
   {
     MBeanNotificationInfo[] notificationInfo = null;
 
-    if (pojo instanceof NotificationBroadcaster)
+    if (bean instanceof NotificationBroadcaster)
     {
-      notificationInfo = ((NotificationBroadcaster) pojo).getNotificationInfo();
+      notificationInfo = ((NotificationBroadcaster) bean).getNotificationInfo();
     }
 
     if (notificationInfo != null && notificationInfo.length > 0)
@@ -125,7 +125,7 @@ public class EasyBeanNotificationWrapper extends EasyBeanWrapper implements Noti
     }
     else
     {
-      Annotation[] annotations = pojo.getClass().getAnnotations();
+      Annotation[] annotations = bean.getClass().getAnnotations();
       List<MBeanNotificationInfo> notificationInfoList = new ArrayList<MBeanNotificationInfo>();
 
       for (Annotation annotation : annotations)

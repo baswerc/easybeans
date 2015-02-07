@@ -129,11 +129,11 @@ class OpenTypeMapping
   
   Method getAttributeMethod(String name)
   {
-    return attributeMappings.get(name).getX();
+    return attributeMappings.get(name).x;
   }
   
   OpenTypeMapping getAttributeMapping(String name)
   {
-    return attributeMappings.get(name).getY();
+    return attributeMappings.get(name).y;
   }
 }

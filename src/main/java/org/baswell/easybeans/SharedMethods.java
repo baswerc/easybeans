@@ -7,6 +7,8 @@ import java.lang.reflect.AccessibleObject;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 class SharedMethods
 {
@@ -97,4 +99,38 @@ class SharedMethods
     }
   }
 
+  static boolean classesEquivalent(Class<?> clazz, String canonicalName)
+  {
+    if (clazz.getCanonicalName().equals(canonicalName))
+    {
+      return true;
+    }
+    else if (classEquivalentMap.containsKey(clazz.getCanonicalName()) && classEquivalentMap.containsKey(canonicalName))
+    {
+      return classEquivalentMap.get(clazz.getCanonicalName()) == classEquivalentMap.get(canonicalName);
+    }
+    else
+    {
+      return false;
+    }
+  }
+
+  static private Map<String, Class> classEquivalentMap = new ConcurrentHashMap<String, Class>();
+  static
+  {
+    classEquivalentMap.put(Byte.class.getCanonicalName(), Byte.class);
+    classEquivalentMap.put(byte.class.getCanonicalName(), Byte.class);
+    classEquivalentMap.put(boolean.class.getCanonicalName(), Boolean.class);
+    classEquivalentMap.put(Boolean.class.getCanonicalName(), Boolean.class);
+    classEquivalentMap.put(short.class.getCanonicalName(), Short.class);
+    classEquivalentMap.put(Short.class.getCanonicalName(), Short.class);
+    classEquivalentMap.put(int.class.getCanonicalName(), Integer.class);
+    classEquivalentMap.put(Integer.class.getCanonicalName(), Integer.class);
+    classEquivalentMap.put(long.class.getCanonicalName(), Long.class);
+    classEquivalentMap.put(Long.class.getCanonicalName(), Long.class);
+    classEquivalentMap.put(float.class.getCanonicalName(), Float.class);
+    classEquivalentMap.put(Float.class.getCanonicalName(), Float.class);
+    classEquivalentMap.put(double.class.getCanonicalName(), Double.class);
+    classEquivalentMap.put(Double.class.getCanonicalName(), Double.class);
+  }
 }

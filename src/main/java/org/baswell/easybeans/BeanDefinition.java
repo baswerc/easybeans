@@ -9,19 +9,19 @@ import java.util.*;
 
 import static org.baswell.easybeans.SharedMethods.*;
 
-public class BeanDefinition
+class BeanDefinition
 {
-  public final Class clazz;
+  final Class clazz;
 
-  public final Descriptor descriptor;
+  final Descriptor descriptor;
 
-  public final List<BeanConstructor> constructors;
+  final List<BeanConstructor> constructors;
 
-  public final List<BeanAttribute> attributes;
+  final List<BeanAttribute> attributes;
 
-  public final List<BeanOperation> operations;
+  final List<BeanOperation> operations;
 
-  public BeanDefinition(Class clazz) throws UneasyBeanException
+  BeanDefinition(Class clazz) throws InvalidEasyBeanAnnotation
   {
     this.clazz = clazz;
 

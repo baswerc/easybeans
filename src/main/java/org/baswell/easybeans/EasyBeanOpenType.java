@@ -13,5 +13,5 @@ public @interface EasyBeanOpenType
   
   String description() default "";
   
-  Class containerType() default void.class;
+  Class mappedType() default void.class;
 }

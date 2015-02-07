@@ -10,11 +10,11 @@ import org.baswell.easybeans.EasyBean;
 import org.baswell.easybeans.EasyBeanConstructor;
 import org.baswell.easybeans.EasyBeanDescription;
 import org.baswell.easybeans.EasyBeanDescriptions;
-import org.baswell.easybeans.EasyBeanExposureLevel;
+import org.baswell.easybeans.EasyBeanExposure;
 import org.baswell.easybeans.EasyBeanNotification;
 import org.baswell.easybeans.P;
 
-@EasyBean(objectName = "org.test:Name=One", exposeLevel = EasyBeanExposureLevel.ALL)
+@EasyBean(objectName = "org.test:Name=One", expose = EasyBeanExposure.ALL)
 @MXBean
 @EasyBeanDescriptions(
 { @EasyBeanDescription(name = "yo", value = "word up"), @EasyBeanDescription(name = "yox", value = "word up2") })

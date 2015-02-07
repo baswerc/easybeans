@@ -1,37 +1,39 @@
 package org.baswell.easybeans;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Field;
-import java.lang.reflect.GenericArrayType;
-import java.lang.reflect.Method;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.lang.reflect.TypeVariable;
-import java.lang.reflect.WildcardType;
-import java.util.ArrayList;
-import java.util.List;
+import java.lang.reflect.*;
+import static org.baswell.easybeans.SharedMethods.*;
 
-class TypeWrapper
+class EasyBeanOpenTypeWrapper
 {
+  private String name;
+
+  private String description;
+
   private Type type;
+
   private Class rawClass;
+
   private Field field;
+
   private Method attributeMethod;
   
-  TypeWrapper(Type type)
+  EasyBeanOpenTypeWrapper(Type type)
   {
     this.type = type;
     rawClass = findRawClass(type);
+    loadAttributes();
   }
 
-  TypeWrapper(Field field)
+  EasyBeanOpenTypeWrapper(Field field)
   {
     this.field = field;
     type = field.getGenericType();
     rawClass = field.getType();
+    loadAttributes();
   }
   
-  TypeWrapper(Method attributeMethod)
+  EasyBeanOpenTypeWrapper(Method attributeMethod)
   {
     this.attributeMethod = attributeMethod;
     
@@ -45,6 +47,17 @@ class TypeWrapper
       type = attributeMethod.getGenericParameterTypes()[0];
       rawClass = attributeMethod.getParameterTypes()[0];
     }
+    loadAttributes();
+  }
+
+  String getName()
+  {
+    return name;
+  }
+
+  String getDescription()
+  {
+    return description;
   }
 
   Type getType()
@@ -57,10 +70,41 @@ class TypeWrapper
     return rawClass;
   }
 
-  <T extends Annotation> T getAnnotation(Class<T> annotationClass)
+  boolean isTransient()
+  {
+    return getAnnotation(EasyBeanTransient.class) != null;
+  }
+
+  private void loadAttributes()
+  {
+    EasyBeanOpenType annotation = getAnnotation(EasyBeanOpenType.class);
+
+    if (annotation != null)
+    {
+      name = annotation.name();
+      description = annotation.description();
+
+      if (annotation.mappedType() != void.class)
+      {
+        rawClass = annotation.mappedType();
+      }
+    }
+
+    if (nullEmpty(name))
+    {
+      name = rawClass.getSimpleName();
+    }
+
+    if (nullEmpty(description))
+    {
+      description = name;
+    }
+  }
+
+  private <T extends Annotation> T getAnnotation(Class<T> annotationClass)
   {
     T annotation = null;
-    
+
     if (field != null)
     {
       annotation = field.getAnnotation(annotationClass);
@@ -69,16 +113,16 @@ class TypeWrapper
     {
       annotation = attributeMethod.getAnnotation(annotationClass);
     }
-    
+
     if ((annotation == null) && (rawClass != null))
     {
       annotation = (T)rawClass.getAnnotation(annotationClass);
     }
-    
+
     return annotation;
   }
   
-  Class findRawClass(Type type)
+  private Class findRawClass(Type type)
   {
     if (type instanceof Class)
     {
@@ -105,7 +149,7 @@ class TypeWrapper
       }
       else
       {
-        return null;
+        throw new InvalidEasyBeanOpenType(type, "Unable to map WildCardType with no lower or upper bounds.");
       }
     }
     else if (type instanceof TypeVariable)
@@ -117,12 +161,12 @@ class TypeWrapper
       }
       else
       {
-        return null;
+        throw new InvalidEasyBeanOpenType(type, "Unable to map TypeVariable with no bounds.");
       }
     }
     else
     {
-      return null;
+      throw new InvalidEasyBeanOpenType(type, "Unsupported type.");
     }
       
   }

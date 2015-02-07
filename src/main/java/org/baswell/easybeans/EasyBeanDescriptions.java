@@ -6,10 +6,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Wrapper to specify multiple descriptor name value pairs per type, constructor, constructor, etc. It's pretty
- * lame that we can't have multiple annotations of the same type at the same location.
- * 
- * @author Corey Baswell
+ * Multiple {@link EasyBeanDescription}. Until 1.8 is minimum there can't be multiple annotations
+ * of the same type at the same location.
  */
 @Target({ElementType.TYPE, ElementType.CONSTRUCTOR, ElementType.METHOD})
 @Retention(value=RetentionPolicy.RUNTIME)

@@ -12,7 +12,16 @@ public class EasyBeansRegistery
 {
   private Map<Object, EasyBeanWrapper> registeredBeans = new HashMap<Object, EasyBeanWrapper>();
 
-  public void register(Object obj) throws MBeanRegistrationException, InstanceAlreadyExistsException, NotCompliantMBeanException, MalformedObjectNameException
+  /**
+   *
+   * @param obj
+   * @throws InvalidEasyBeanNameException
+   * @throws InvalidEasyBeanAnnotation
+   * @throws InvalidEasyBeanOpenType
+   * @throws ObjectNameAlreadyRegistered
+   * @throws EasyBeanException
+   */
+  public void register(Object obj) throws InvalidEasyBeanNameException, InvalidEasyBeanAnnotation, InvalidEasyBeanOpenType, ObjectNameAlreadyRegistered, EasyBeanException
   {
     EasyBeanWrapper wrapper;
 
@@ -29,24 +38,35 @@ public class EasyBeansRegistery
       wrapper = new EasyBeanWrapper(obj);
     }
 
-    ObjectName oName = wrapper.getObjectName();
-    MBeanServer server = ManagementFactory.getPlatformMBeanServer();
-    
-    if (server.isRegistered(oName))
+    try
     {
-      try
-      {
-        server.unregisterMBean(oName);
-      }
-      catch (InstanceNotFoundException e)
-      {}
+      ManagementFactory.getPlatformMBeanServer().registerMBean(wrapper, wrapper.objectName);
+      registeredBeans.put(obj, wrapper);
     }
-    
-    ManagementFactory.getPlatformMBeanServer().registerMBean(wrapper, oName);
-    registeredBeans.put(obj, wrapper);
+    catch (InstanceAlreadyExistsException e)
+    {
+      throw new ObjectNameAlreadyRegistered(e, obj.getClass(), wrapper.objectName);
+    }
+    catch (MBeanRegistrationException e)
+    {
+      throw new EasyBeanException(e);
+    }
+    catch (NotCompliantMBeanException e)
+    {
+      throw new EasyBeanException(e);
+    }
   }
 
-  public void register(List objects) throws MBeanRegistrationException, InstanceAlreadyExistsException, NotCompliantMBeanException, MalformedObjectNameException
+  /**
+   *
+   * @param objects
+   * @throws InvalidEasyBeanNameException
+   * @throws InvalidEasyBeanAnnotation
+   * @throws InvalidEasyBeanOpenType
+   * @throws ObjectNameAlreadyRegistered
+   * @throws EasyBeanException
+   */
+  public void register(List objects) throws InvalidEasyBeanNameException, InvalidEasyBeanAnnotation, InvalidEasyBeanOpenType, ObjectNameAlreadyRegistered, EasyBeanException
   {
     for (Object object : objects)
     {
@@ -54,16 +74,26 @@ public class EasyBeansRegistery
     }
   }
 
-  public void unregister(Object obj) throws InstanceNotFoundException, MBeanRegistrationException
+  /**
+   *
+   * @param obj
+   * @throws EasyBeanException
+   */
+  public void unregister(Object obj) throws EasyBeanException
   {
     EasyBeanWrapper wrapper = registeredBeans.remove(obj);
-    if (wrapper == null)
+    if (wrapper != null)
     {
-      throw new InstanceNotFoundException("No mbean registered for object " + obj);
-    }
-    else
-    {
-      ManagementFactory.getPlatformMBeanServer().unregisterMBean(wrapper.getObjectName());
+      try
+      {
+        ManagementFactory.getPlatformMBeanServer().unregisterMBean(wrapper.objectName);
+      }
+      catch (InstanceNotFoundException e)
+      {}
+      catch (MBeanRegistrationException e)
+      {
+        throw new EasyBeanException(e);
+      }
     }
   }
 

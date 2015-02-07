@@ -8,9 +8,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-abstract public class BeanMember
+abstract class BeanMember
 {
-  public final Class clazz;
+  final Class clazz;
 
   protected String name;
 

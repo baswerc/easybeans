@@ -9,9 +9,9 @@ import static org.baswell.easybeans.SharedMethods.*;
 
 class BeanAttribute extends BeanMember
 {
-  public final boolean wasReadAnnotated;
+  final boolean wasReadAnnotated;
 
-  public final boolean wasWriteAnnotated;
+  final boolean wasWriteAnnotated;
 
   private final Field field;
 
@@ -43,7 +43,7 @@ class BeanAttribute extends BeanMember
       description = name = capatalize(field.getName());
     }
 
-    typeMapping = createOpenType(new TypeWrapper(field));
+    typeMapping = createOpenType(new EasyBeanOpenTypeWrapper(field));
     descriptor = getDescriptor(field);
   }
 
@@ -89,7 +89,7 @@ class BeanAttribute extends BeanMember
       description = wasWriteAnnotated && hasContent(setterMeta.description()) ? setterMeta.description() : getterSetterName;
     }
 
-    typeMapping = createOpenType(new TypeWrapper(getter == null ? setter : getter));
+    typeMapping = createOpenType(new EasyBeanOpenTypeWrapper(getter == null ? setter : getter));
     field = null;
     descriptor = getDescriptor(getter, setter);
   }

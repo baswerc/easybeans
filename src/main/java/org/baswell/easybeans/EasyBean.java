@@ -10,24 +10,24 @@ import javax.management.ObjectName;
 /**
  * Easy bean metadata for an JMX MBean.
  * 
- * @author Corey Baswell
  */
 @Target({ElementType.TYPE})
 @Retention(value=RetentionPolicy.RUNTIME)
 public @interface EasyBean
 {
   /**
-   * The {@link ObjectName} for this easy bean.
+   * The optional {@link ObjectName} for this easy bean. If not provided the object name will be generated from
+   * the annotated object's class name.
    */
   String objectName() default "";
 
   /**
-   * The description of this easy bean.
+   * The optional description of this easy bean.
    */
   String description() default "";
   
   /**
-   * The exposure level for members of this easy bean. Defaults to {@link EasyBeanExposureLevel#ANNOTATED}.
+   * The type of exposure for fields, methods and constructors of this easy bean. Defaults to {@link EasyBeanExposure#ANNOTATED}.
    */
-  EasyBeanExposureLevel exposeLevel() default EasyBeanExposureLevel.ANNOTATED;
+  EasyBeanExposure expose() default EasyBeanExposure.ANNOTATED;
 }
