@@ -5,22 +5,30 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.management.InstanceAlreadyExistsException;
-import javax.management.InstanceNotFoundException;
-import javax.management.MBeanRegistrationException;
-import javax.management.MBeanServer;
-import javax.management.MalformedObjectNameException;
-import javax.management.NotCompliantMBeanException;
-import javax.management.ObjectName;
+import javax.management.*;
 
 
 public class EasyBeansRegistery
 {
-  private Map<IdentityHashKey, EasyBeanWrapper> beansMap = new HashMap<IdentityHashKey, EasyBeanWrapper>();
+  private Map<Object, EasyBeanWrapper> registeredBeans = new HashMap<Object, EasyBeanWrapper>();
 
   public void register(Object obj) throws MBeanRegistrationException, InstanceAlreadyExistsException, NotCompliantMBeanException, MalformedObjectNameException
   {
-    EasyBeanWrapper wrapper = (obj instanceof EasyBeanWrapper) ? (EasyBeanWrapper)obj : new EasyBeanWrapper(obj);
+    EasyBeanWrapper wrapper;
+
+    if (obj instanceof EasyBeanWrapper)
+    {
+      wrapper = (EasyBeanWrapper) obj;
+    }
+    else if ((obj instanceof EasyBeansNotifierUser) || (obj instanceof NotificationBroadcaster))
+    {
+      wrapper = new EasyBeanNotificationWrapper(obj);
+    }
+    else
+    {
+      wrapper = new EasyBeanWrapper(obj);
+    }
+
     ObjectName oName = wrapper.getObjectName();
     MBeanServer server = ManagementFactory.getPlatformMBeanServer();
     
@@ -35,14 +43,20 @@ public class EasyBeansRegistery
     }
     
     ManagementFactory.getPlatformMBeanServer().registerMBean(wrapper, oName);
-    beansMap.put(new IdentityHashKey(obj), wrapper);
+    registeredBeans.put(obj, wrapper);
+  }
+
+  public void register(List objects) throws MBeanRegistrationException, InstanceAlreadyExistsException, NotCompliantMBeanException, MalformedObjectNameException
+  {
+    for (Object object : objects)
+    {
+      register(object);
+    }
   }
 
   public void unregister(Object obj) throws InstanceNotFoundException, MBeanRegistrationException
   {
-    IdentityHashKey key = new IdentityHashKey(obj);
-
-    EasyBeanWrapper wrapper = beansMap.remove(key);
+    EasyBeanWrapper wrapper = registeredBeans.remove(obj);
     if (wrapper == null)
     {
       throw new InstanceNotFoundException("No mbean registered for object " + obj);
@@ -52,19 +66,11 @@ public class EasyBeansRegistery
       ManagementFactory.getPlatformMBeanServer().unregisterMBean(wrapper.getObjectName());
     }
   }
-  
-  public void setEasyBeans(List objects) throws MBeanRegistrationException, InstanceAlreadyExistsException, NotCompliantMBeanException, MalformedObjectNameException
-  {
-    for (Object object : objects)
-    {
-      register(object);
-    }
-  }
-  
+
   public void unregisterAll()
   {
     MBeanServer server = ManagementFactory.getPlatformMBeanServer();
-    for (EasyBeanWrapper easyBeanWrapper : beansMap.values())
+    for (EasyBeanWrapper easyBeanWrapper : registeredBeans.values())
     {
       try
       {
@@ -74,28 +80,6 @@ public class EasyBeansRegistery
       {}
     }
     
-    beansMap.clear();
-  }
-
-  private class IdentityHashKey
-  {
-    Object obj;
-
-    IdentityHashKey(Object obj)
-    {
-      this.obj = obj;
-    }
-
-    @Override
-    public boolean equals(Object obj)
-    {
-      return this.obj == obj;
-    }
-
-    @Override
-    public int hashCode()
-    {
-      return obj.hashCode();
-    }
+    registeredBeans.clear();
   }
 }

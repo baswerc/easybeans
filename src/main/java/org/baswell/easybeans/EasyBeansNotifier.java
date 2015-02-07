@@ -2,10 +2,8 @@ package org.baswell.easybeans;
 
 import javax.management.Notification;
 
-public interface NotificationBridge
+public interface EasyBeansNotifier
 {
-  void notify(String message);
-  
   void notify(String type, String message);
   
   void notify(Notification notification);

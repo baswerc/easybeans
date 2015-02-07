@@ -39,7 +39,7 @@ public class EasyBeanWrapper implements DynamicMBean
   Object pojo;
   EasyBeanExposureLevel exposeLevel;
 
-  MBeanInfo info;
+  MBeanInfo mBeanInfo;
   ObjectName objectName;
 
   Map<String, BeanAttribute> attributeReadMap;
@@ -95,7 +95,7 @@ public class EasyBeanWrapper implements DynamicMBean
       OpenMBeanOperationInfo[] opInfo = loadOperationInfo(beanDefinition.operations);
       MBeanNotificationInfo[] notificationInfo = loadNotificationInfo();
 
-      info = new OpenMBeanInfoSupport(className, mbeanDescription, attributeInfo, constructorInfo, opInfo, notificationInfo, beanDefinition.descriptor);
+      mBeanInfo = new OpenMBeanInfoSupport(className, mbeanDescription, attributeInfo, constructorInfo, opInfo, notificationInfo, beanDefinition.descriptor);
     }
     catch (MalformedObjectNameException monexc)
     {
@@ -155,15 +155,17 @@ public class EasyBeanWrapper implements DynamicMBean
    * 
    * @see javax.management.DynamicMBean#getMBeanInfo()
    */
+  @Override
   public MBeanInfo getMBeanInfo()
   {
-    return info;
+    return mBeanInfo;
   }
 
   /**
    * 
    * @see javax.management.DynamicMBean#invoke(String, Object[], String[])
    */
+  @Override
   public Object invoke(String actionName, Object[] params, String[] signature) throws MBeanException, ReflectionException
   {
     List<BeanOperation> operations = operationMap.get(actionName);

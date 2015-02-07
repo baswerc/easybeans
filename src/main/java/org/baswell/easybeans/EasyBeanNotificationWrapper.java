@@ -6,63 +6,49 @@ import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.baswell.easybeans.SharedMethods.getDescriptor;
 
-public class EasyBeanNotificationWrapper extends EasyBeanWrapper implements NotificationEmitter, NotificationBridge
+public class EasyBeanNotificationWrapper extends EasyBeanWrapper implements NotificationEmitter, EasyBeansNotifier
 {
-  List<NotificationListenerEntry> listenerEntries;
+  List<NotificationListenerDatum> notificationListenerData;
+
+  private AtomicLong sequenceNumberGenerator;
 
   public EasyBeanNotificationWrapper(Object pojo) throws EasyBeanDefinitionException
   {
     super(pojo);
-    if (pojo instanceof  NotificationBridgeReceiver)
+
+    if (pojo instanceof EasyBeansNotifierUser)
     {
-      ((NotificationBridgeReceiver)pojo).setBridge(this);
+      ((EasyBeansNotifierUser)pojo).setNotifier(this);
+      sequenceNumberGenerator = new AtomicLong();
+      notificationListenerData = new ArrayList<NotificationListenerDatum>();
     }
-  }
-
-
-  @Override
-  public void notify(String message)
-  {
-
   }
 
   @Override
   public void notify(String type, String message)
   {
-
+    notify(new Notification(type, null, sequenceNumberGenerator.incrementAndGet(), message));
   }
 
   @Override
   public void notify(Notification notification)
   {
-
+    for (NotificationListenerDatum notificationListenerDatum : notificationListenerData)
+    {
+      notificationListenerDatum.notifyIfNotFiltered(notification);
+    }
   }
 
-
-  /**
-   *
-   * @see javax.management.NotificationEmitter#getNotificationInfo()
-   */
   @Override
   public MBeanNotificationInfo[] getNotificationInfo()
   {
-    if (pojo instanceof NotificationBroadcaster)
-    {
-      return ((NotificationBroadcaster) pojo).getNotificationInfo();
-    }
-    else
-    {
-      return info.getNotifications();
-    }
+    return mBeanInfo.getNotifications();
   }
 
-  /**
-   *
-   * @see javax.management.NotificationEmitter#addNotificationListener(javax.management.NotificationListener, javax.management.NotificationFilter, Object)
-   */
   @Override
   public void addNotificationListener(NotificationListener listener, NotificationFilter filter, Object handback) throws IllegalArgumentException
   {
@@ -70,16 +56,13 @@ public class EasyBeanNotificationWrapper extends EasyBeanWrapper implements Noti
     {
       ((NotificationBroadcaster) pojo).addNotificationListener(listener, filter, handback);
     }
-    else
+
+    if (pojo instanceof EasyBeansNotifierUser)
     {
-      listenerEntries.add(new NotificationListenerEntry(listener, filter, handback));
+      notificationListenerData.add(new NotificationListenerDatum(listener, filter, handback));
     }
   }
 
-  /**
-   *
-   * @see javax.management.NotificationEmitter#removeNotificationListener(NotificationListener, NotificationFilter, Object)
-   */
   @Override
   public void removeNotificationListener(NotificationListener listener, NotificationFilter filter, Object handback) throws ListenerNotFoundException
   {
@@ -91,23 +74,20 @@ public class EasyBeanNotificationWrapper extends EasyBeanWrapper implements Noti
     {
       ((NotificationBroadcaster) pojo).removeNotificationListener(listener);
     }
-    else
+
+    if (pojo instanceof EasyBeansNotifierUser)
     {
-      for (int i = (listenerEntries.size() - 1); i >= 0; i--)
+      for (int i = (notificationListenerData.size() - 1); i >= 0; i--)
       {
-        NotificationListenerEntry listenerEntry = (NotificationListenerEntry)listenerEntries.get(i);
+        NotificationListenerDatum listenerEntry = (NotificationListenerDatum) notificationListenerData.get(i);
         if (listenerEntry.equals(listener, filter, handback))
         {
-          listenerEntries.remove(i);
+          notificationListenerData.remove(i);
         }
       }
     }
   }
 
-  /**
-   *
-   * @see NotificationEmitter#removeNotificationListener(NotificationListener)
-   */
   @Override
   public void removeNotificationListener(NotificationListener listener) throws ListenerNotFoundException
   {
@@ -115,14 +95,15 @@ public class EasyBeanNotificationWrapper extends EasyBeanWrapper implements Noti
     {
       ((NotificationBroadcaster) pojo).removeNotificationListener(listener);
     }
-    else
+
+    if (pojo instanceof EasyBeansNotifierUser)
     {
-      for (int i = (listenerEntries.size() - 1); i >= 0; i--)
+      for (int i = (notificationListenerData.size() - 1); i >= 0; i--)
       {
-        NotificationListenerEntry listenerEntry = (NotificationListenerEntry)listenerEntries.get(i);
+        NotificationListenerDatum listenerEntry = (NotificationListenerDatum) notificationListenerData.get(i);
         if (listenerEntry.equals(listener))
         {
-          listenerEntries.remove(i);
+          notificationListenerData.remove(i);
         }
       }
     }
@@ -131,9 +112,16 @@ public class EasyBeanNotificationWrapper extends EasyBeanWrapper implements Noti
   @Override
   MBeanNotificationInfo[] loadNotificationInfo()
   {
+    MBeanNotificationInfo[] notificationInfo = null;
+
     if (pojo instanceof NotificationBroadcaster)
     {
-      return ((NotificationBroadcaster) pojo).getNotificationInfo();
+      notificationInfo = ((NotificationBroadcaster) pojo).getNotificationInfo();
+    }
+
+    if (notificationInfo != null && notificationInfo.length > 0)
+    {
+      return notificationInfo;
     }
     else
     {
@@ -162,18 +150,17 @@ public class EasyBeanNotificationWrapper extends EasyBeanWrapper implements Noti
         }
       }
 
-      listenerEntries = new ArrayList<NotificationListenerEntry>();
       return notificationInfoList.toArray(new ModelMBeanNotificationInfo[notificationInfoList.size()]);
     }
   }
 
-  private class NotificationListenerEntry
+  private class NotificationListenerDatum
   {
     private NotificationListener listener;
     private NotificationFilter filter;
     private Object handback;
 
-    public NotificationListenerEntry(NotificationListener listener, NotificationFilter filter, Object handback)
+    public NotificationListenerDatum(NotificationListener listener, NotificationFilter filter, Object handback)
     {
       this.listener = listener;
       this.filter = filter;
@@ -198,5 +185,4 @@ public class EasyBeanNotificationWrapper extends EasyBeanWrapper implements Noti
       return (this.listener == listener);
     }
   }
-
 }
