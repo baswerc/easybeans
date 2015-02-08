@@ -7,7 +7,7 @@ import javax.management.ObjectName;
 
 import static org.junit.Assert.*;
 
-public class TestWrapper
+public class TestEasyBeanWrapper
 {
   @Test
   public void testObjectName()
@@ -55,6 +55,21 @@ public class TestWrapper
     assertEquals("HELLO WORLD", wrapper.mBeanInfo.getDescription());
   }
 
+  @Test
+  public void testExposure()
+  {
+    assertEquals(EasyBeanExposure.ALL, new EasyBeanWrapper(new AnnotatedExposureBean()).exposure);
+    assertEquals(EasyBeanExposure.ANNOTATED, new EasyBeanWrapper(new AnnotatedExposureBean(), EasyBeanExposure.ANNOTATED).exposure);
+    assertEquals(EasyBeanExposure.ANNOTATED_AND_READ_ONLY, new EasyBeanWrapper(new AnnotatedExposureBean(), EasyBeanExposure.ANNOTATED_AND_READ_ONLY).exposure);
+    assertEquals(EasyBeanExposure.ALL, new EasyBeanWrapper(new AnnotatedExposureBean(), EasyBeanExposure.ALL).exposure);
+
+    assertEquals(EasyBeanExposure.ANNOTATED, new EasyBeanWrapper(new UnnotatedExposureBean()).exposure);
+    assertEquals(EasyBeanExposure.ANNOTATED, new EasyBeanWrapper(new UnnotatedExposureBean(), EasyBeanExposure.ANNOTATED).exposure);
+    assertEquals(EasyBeanExposure.ANNOTATED_AND_READ_ONLY, new EasyBeanWrapper(new UnnotatedExposureBean(), EasyBeanExposure.ANNOTATED_AND_READ_ONLY).exposure);
+    assertEquals(EasyBeanExposure.ALL, new EasyBeanWrapper(new UnnotatedExposureBean(), EasyBeanExposure.ALL).exposure);
+
+  }
+
   class NameFromClassName
   {}
 
@@ -81,4 +96,11 @@ public class TestWrapper
       return objectName;
     }
   }
+
+  @EasyBean(expose = EasyBeanExposure.ALL)
+  class AnnotatedExposureBean
+  {}
+
+  class UnnotatedExposureBean
+  {}
 }
