@@ -31,7 +31,7 @@ public class EasyBeanNotificationWrapper extends EasyBeanWrapper implements Noti
   @Override
   public void notify(String type, String message)
   {
-    notify(new Notification(type, bean, sequenceNumberGenerator.incrementAndGet(), message));
+    notify(new Notification(type, bean.getClass().getName(), sequenceNumberGenerator.incrementAndGet(), message));
   }
 
   @Override

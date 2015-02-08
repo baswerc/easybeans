@@ -42,8 +42,13 @@ class BeanOperation extends BeanMember
       impact = OperationImpact.UNKNOWN;
     }
 
-    typeMapping = createOpenType(new EasyBeanOpenTypeWrapper(method));
     descriptor = getDescriptor(method);
+  }
+
+  @Override
+  OpenTypeMapping getTypeMapping()
+  {
+    return createOpenType(new EasyBeanOpenTypeWrapper(method));
   }
 
   void invoke(Object pojo, Object... parameters) throws IllegalAccessException, InvocationTargetException

@@ -222,28 +222,21 @@ class OpenTypeMappingCreator
     {
       compositedClassesVisited.add(rawClass);
 
+      Map<String, Pair<BeanAttribute, OpenTypeMapping>> attributeMappings = new HashMap<String, Pair<BeanAttribute,OpenTypeMapping>>();
       List<String> attributeNameList = new ArrayList<String>();
       List<String> attributeDescriptionList = new ArrayList<String>();
       List<OpenType> attributeTypeList = new ArrayList<OpenType>();
 
-      Map<String, Pair<Method, OpenTypeMapping>> attributeMappings = new HashMap<String, Pair<Method,OpenTypeMapping>>();
-
-      BeanInfo beanInfo = Introspector.getBeanInfo(rawClass);
-      PropertyDescriptor[] properties = beanInfo.getPropertyDescriptors();
-
-      for (PropertyDescriptor property : properties)
+      BeanDefinition beanDefinition = new BeanDefinition(rawClass);
+      for (BeanAttribute attribute : beanDefinition.attributes)
       {
-        Method getter = property.getReadMethod();
-
-        if (getter != null)
+        EasyBeanOpenTypeWrapper attributeTypeWrapper = attribute.getReadTypeWrapper();
+        if (attributeTypeWrapper != null)
         {
-          if (getter.getDeclaringClass() == Object.class) continue;
-
-          EasyBeanOpenTypeWrapper attributeTypeWrapper = new EasyBeanOpenTypeWrapper(getter);
           OpenTypeMapping attributeTypeMapping = createOpenType(attributeTypeWrapper, compositedClassesVisited);
           if (attributeTypeMapping != null)
           {
-            attributeMappings.put(attributeTypeWrapper.getName(), pair(getter, attributeTypeMapping));
+            attributeMappings.put(attributeTypeWrapper.getName(), pair(attribute, attributeTypeMapping));
             attributeNameList.add(attributeTypeWrapper.getName());
             attributeDescriptionList.add(attributeTypeWrapper.getDescription());
             attributeTypeList.add(attributeTypeMapping.getOpenType());
@@ -263,10 +256,6 @@ class OpenTypeMappingCreator
 
         return new OpenTypeMapping(new CompositeType(typeWrapper.getName(), typeWrapper.getDescription(), attributeNames, attributeDescriptions, attributeTypes), attributeMappings);
       }
-    }
-    catch (IntrospectionException iexc)
-    {
-      throw new RuntimeException(iexc);
     }
     catch (OpenDataException odexc)
     {

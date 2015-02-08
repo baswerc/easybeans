@@ -1,9 +1,8 @@
 package org.baswell.easybeans;
 
-import org.baswell.easybeans.beans.One;
-import org.baswell.easybeans.beans.PublicAttributes;
-
-import javax.management.JMX;
+import org.baswell.easybeans.beans.TestNotificationsBean;
+import org.baswell.easybeans.beans.TestPublicAttributesBean;
+import org.baswell.easybeans.beans.TestTypesBean;
 
 public class JmxRunner
 {
@@ -11,9 +10,9 @@ public class JmxRunner
   {
     EasyBeansRegistery registry = new EasyBeansRegistery();
 
-    One one = new One();
-    registry.register(one);
-    registry.register(new PublicAttributes());
+    registry.register(new TestPublicAttributesBean());
+    registry.register(new TestTypesBean());
+    registry.register(new TestNotificationsBean());
 
     synchronized (JmxRunner.class)
     {

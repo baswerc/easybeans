@@ -43,7 +43,6 @@ class BeanAttribute extends BeanMember
       description = name = capatalize(field.getName());
     }
 
-    typeMapping = createOpenType(new EasyBeanOpenTypeWrapper(field));
     descriptor = getDescriptor(field);
   }
 
@@ -89,10 +88,39 @@ class BeanAttribute extends BeanMember
       description = wasWriteAnnotated && hasContent(setterMeta.description()) ? setterMeta.description() : getterSetterName;
     }
 
-    typeMapping = createOpenType(new EasyBeanOpenTypeWrapper(getter == null ? setter : getter));
     field = null;
     descriptor = getDescriptor(getter, setter);
   }
+
+  @Override
+  OpenTypeMapping getTypeMapping()
+  {
+    if (field != null)
+    {
+      return createOpenType(new EasyBeanOpenTypeWrapper(field));
+    }
+    else
+    {
+      return createOpenType(new EasyBeanOpenTypeWrapper(getter == null ? setter : getter));
+    }
+  }
+
+  EasyBeanOpenTypeWrapper getReadTypeWrapper()
+  {
+    if (field != null)
+    {
+      return new EasyBeanOpenTypeWrapper(field);
+    }
+    else if (getter != null)
+    {
+      return new EasyBeanOpenTypeWrapper(getter);
+    }
+    else
+    {
+      return null;
+    }
+  }
+
 
   boolean isIs()
   {

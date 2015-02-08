@@ -127,7 +127,7 @@ public class EasyBeanWrapper implements DynamicMBean
     {
       BeanAttribute beanAttribute = attributeReadMap.get(attribute);
       Object value = beanAttribute.get(bean);
-      return openTypeMapper.map(value, beanAttribute.typeMapping);
+      return openTypeMapper.map(value, beanAttribute.getTypeMapping());
     }
     catch (Exception exc)
     {
@@ -195,7 +195,7 @@ public class EasyBeanWrapper implements DynamicMBean
           try
           {
             Object value = method.invoke(bean, params);
-            return openTypeMapper.map(value, operation.typeMapping);
+            return openTypeMapper.map(value, operation.getTypeMapping());
           }
           catch (Throwable exc)
           {
@@ -300,14 +300,14 @@ public class EasyBeanWrapper implements DynamicMBean
     
     for (BeanAttribute beanAttribute : beanAttributes)
     {
-      if (beanAttribute.typeMapping != null)
+      if (beanAttribute.getTypeMapping() != null)
       {
         boolean isReadable = beanAttribute.hasReadAccess() && (beanAttribute.wasReadAnnotated || (exposure != EasyBeanExposure.ANNOTATED));
         boolean isWriteable = beanAttribute.hasWriteAccess() && (beanAttribute.wasWriteAnnotated || (exposure == EasyBeanExposure.ALL));
 
         if (isReadable || isWriteable)
         {
-          attributesInfo.add(new OpenMBeanAttributeInfoSupport(beanAttribute.name, beanAttribute.description, (OpenType<Long>) beanAttribute.typeMapping.getOpenType(), isReadable, isWriteable, beanAttribute.isIs(), beanAttribute.descriptor));
+          attributesInfo.add(new OpenMBeanAttributeInfoSupport(beanAttribute.name, beanAttribute.description, (OpenType<Long>) beanAttribute.getTypeMapping().getOpenType(), isReadable, isWriteable, beanAttribute.isIs(), beanAttribute.descriptor));
 
           if (isReadable)
           {
@@ -339,14 +339,14 @@ public class EasyBeanWrapper implements DynamicMBean
     
     for (BeanOperation beanOperation : beanOperations)
     {
-      if (beanOperation.typeMapping != null)
+      if (beanOperation.getTypeMapping() != null)
       {
         if (beanOperation.wasAnnotated || (exposure == EasyBeanExposure.ALL))
         {
           OpenMBeanParameterInfo[] paramsInfo = getParameterInfo(beanOperation.method.getParameterTypes(), beanOperation.method.getParameterAnnotations(), beanOperation.parameterNames, beanOperation.parameterDescriptions);
           if (paramsInfo != null)
           {
-            operationsInfo.add(new OpenMBeanOperationInfoSupport(beanOperation.name, beanOperation.description, paramsInfo, beanOperation.typeMapping.getOpenType(), beanOperation.impact.getMBeanImpact(), beanOperation.descriptor));
+            operationsInfo.add(new OpenMBeanOperationInfoSupport(beanOperation.name, beanOperation.description, paramsInfo, beanOperation.getTypeMapping().getOpenType(), beanOperation.impact.getMBeanImpact(), beanOperation.descriptor));
 
             List<BeanOperation> operationsWithSameName;
             if (operationMap.containsKey(beanOperation.name))

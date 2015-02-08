@@ -3,6 +3,7 @@ package org.baswell.easybeans;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 
+import static org.baswell.easybeans.OpenTypeMappingCreator.createOpenType;
 import static org.baswell.easybeans.SharedMethods.hasContent;
 import static org.baswell.easybeans.SharedMethods.*;
 
@@ -39,6 +40,12 @@ class BeanConstructor extends BeanMember
     }
 
     descriptor = getDescriptor(constructor);
+  }
+
+  @Override
+  OpenTypeMapping getTypeMapping()
+  {
+    return null;
   }
 
   void newInstance(Object pojo, Object... parameters) throws IllegalAccessException, InvocationTargetException, InstantiationException

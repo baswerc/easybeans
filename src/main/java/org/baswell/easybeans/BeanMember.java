@@ -10,19 +10,19 @@ import java.util.List;
 
 abstract class BeanMember
 {
+  abstract OpenTypeMapping getTypeMapping();
+
   final Class clazz;
 
-  protected String name;
+  String name;
 
-  protected String description;
+  String description;
 
-  protected OpenTypeMapping typeMapping;
+  Descriptor descriptor;
 
-  protected Descriptor descriptor;
+  boolean wasAnnotated;
 
-  protected boolean wasAnnotated;
-
-  protected BeanMember(Class clazz)
+  BeanMember(Class clazz)
   {
     assert clazz != null;
 

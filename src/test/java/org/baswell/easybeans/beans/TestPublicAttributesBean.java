@@ -4,7 +4,7 @@ import org.baswell.easybeans.EasyBean;
 import org.baswell.easybeans.EasyBeanExposure;
 
 @EasyBean(expose = EasyBeanExposure.ALL)
-public class PublicAttributes
+public class TestPublicAttributesBean
 {
   public String one = "1";
 

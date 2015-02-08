@@ -24,7 +24,7 @@ class OpenTypeMapping
   
   private OpenTypeMapping valueTypeMapping;
   
-  private Map<String, Pair<Method, OpenTypeMapping>> attributeMappings;
+  private Map<String, Pair<BeanAttribute, OpenTypeMapping>> attributeMappings;
   
   OpenTypeMapping(OpenType nativeOpenType)
   {
@@ -51,7 +51,7 @@ class OpenTypeMapping
     this.valueTypeMapping = valueTypeMapping;
   }
 
-  OpenTypeMapping(CompositeType compositeType, Map<String, Pair<Method, OpenTypeMapping>> attributeMappings)
+  OpenTypeMapping(CompositeType compositeType, Map<String, Pair<BeanAttribute, OpenTypeMapping>> attributeMappings)
   {
     openType = compositeType;
     this.attributeMappings = attributeMappings;
@@ -126,8 +126,8 @@ class OpenTypeMapping
   {
     return (CompositeType)openType;
   }
-  
-  Method getAttributeMethod(String name)
+
+  BeanAttribute getBeanAttribute(String name)
   {
     return attributeMappings.get(name).x;
   }

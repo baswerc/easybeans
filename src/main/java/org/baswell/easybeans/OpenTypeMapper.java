@@ -173,10 +173,10 @@ class OpenTypeMapper
     {
       try
       {
-        Method attributeGetterMethod = typeMapping.getAttributeMethod(name);
+        BeanAttribute beanAttribute = typeMapping.getBeanAttribute(name);
         OpenTypeMapping attributeTypeMapping = typeMapping.getAttributeMapping(name);
 
-        Object value = attributeGetterMethod.invoke(obj);
+        Object value = beanAttribute.get(obj);
         Object mappedValue = (value == null) ? null : map(value, attributeTypeMapping);
         names.add(name);
         values.add(mappedValue);
