@@ -16,6 +16,8 @@ class BeanOperation extends BeanMember
 
   final String[] parameterDescriptions;
 
+  final String[] parameterDefaultValues;
+
   BeanOperation(Class clazz, Method method)
   {
     super(clazz);
@@ -33,12 +35,13 @@ class BeanOperation extends BeanMember
       description = hasContent(oppMeta.description()) ? oppMeta.description() : name;
       parameterNames = oppMeta.parameterNames();
       parameterDescriptions = oppMeta.parameterDescriptions();
+      parameterDefaultValues = oppMeta.parameterDefaultValues();
       impact = oppMeta.impact();
     }
     else
     {
       description = name = method.getName();
-      parameterDescriptions = parameterNames = null;
+      parameterDefaultValues = parameterDescriptions = parameterNames = null;
       impact = OperationImpact.UNKNOWN;
     }
 

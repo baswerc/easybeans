@@ -22,6 +22,8 @@ public @interface P
    */
   String description() default "";
 
+  String[] defaultValue() default {};
+
   /**
    * {@link javax.management.Descriptor} information about this parameter. The number of descriptorNames must match the
    * number of descriptor values so that descriptorNames[i] = descriptorValues[i].

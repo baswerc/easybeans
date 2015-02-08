@@ -280,7 +280,7 @@ public class EasyBeanWrapper implements DynamicMBean
     {
       if (beanConstructor.wasAnnotated || (exposure == EasyBeanExposure.ALL))
       {
-        OpenMBeanParameterInfo[] paramsInfo = getParameterInfo(beanConstructor.constructor.getParameterTypes(), beanConstructor.constructor.getParameterAnnotations(), beanConstructor.parameterNames, beanConstructor.parameterDescriptions);
+        OpenMBeanParameterInfo[] paramsInfo = getParameterInfo(bean.getClass(), beanConstructor.constructor.getParameterTypes(), beanConstructor.constructor.getParameterAnnotations(), beanConstructor.parameterNames, beanConstructor.parameterDescriptions, null);
         if (paramsInfo != null)
         {
           constructorsInfo.add(new OpenMBeanConstructorInfoSupport(beanConstructor.name, beanConstructor.description, paramsInfo, beanConstructor.descriptor));
@@ -343,7 +343,7 @@ public class EasyBeanWrapper implements DynamicMBean
       {
         if (beanOperation.wasAnnotated || (exposure == EasyBeanExposure.ALL))
         {
-          OpenMBeanParameterInfo[] paramsInfo = getParameterInfo(beanOperation.method.getParameterTypes(), beanOperation.method.getParameterAnnotations(), beanOperation.parameterNames, beanOperation.parameterDescriptions);
+          OpenMBeanParameterInfo[] paramsInfo = getParameterInfo(bean.getClass(), beanOperation.method.getParameterTypes(), beanOperation.method.getParameterAnnotations(), beanOperation.parameterNames, beanOperation.parameterDescriptions, beanOperation.parameterDefaultValues);
           if (paramsInfo != null)
           {
             operationsInfo.add(new OpenMBeanOperationInfoSupport(beanOperation.name, beanOperation.description, paramsInfo, beanOperation.getTypeMapping().getOpenType(), beanOperation.impact.getMBeanImpact(), beanOperation.descriptor));
@@ -398,7 +398,7 @@ public class EasyBeanWrapper implements DynamicMBean
     return operationsInfo.toArray(new OpenMBeanOperationInfo[operationsInfo.size()]);
   }
   
-  static OpenMBeanParameterInfo[] getParameterInfo(Class<?>[] paramTypes, Annotation[][] annotations, String[] parameterNames, String[] parameterDescriptions)
+  static OpenMBeanParameterInfo[] getParameterInfo(Class beanClass, Class<?>[] paramTypes, Annotation[][] annotations, String[] parameterNames, String[] parameterDescriptions, String[] parameterDefaultValues)
   {
     OpenMBeanParameterInfo[] paramsInfo = new OpenMBeanParameterInfo[paramTypes.length];
     
@@ -427,6 +427,13 @@ public class EasyBeanWrapper implements DynamicMBean
         description = name;
       }
 
+      String defaultValueString = null;
+      if ((parameterDefaultValues != null) && (parameterDefaultValues.length > i))
+      {
+        defaultValueString = parameterDefaultValues[i];
+      }
+
+
       for (Annotation annotation : annotations[i])
       {
         if (annotation instanceof P)
@@ -434,12 +441,37 @@ public class EasyBeanWrapper implements DynamicMBean
           P jmxParameter = (P)annotation;
           if (jmxParameter.value().trim().length() > 0) name = jmxParameter.value();
           if (jmxParameter.description().trim().length() > 0) description = jmxParameter.description();
+          if (jmxParameter.defaultValue().length > 0) defaultValueString = jmxParameter.defaultValue()[0];
           
           break;
         }
       }
-      
-      paramsInfo[i] = new OpenMBeanParameterInfoSupport(name, description, typeMapping.getOpenType());
+
+      try
+      {
+        Object defaultValue = null;
+        if ((defaultValueString != null) && typeMapping.isSimpleType())
+        {
+          /*
+           * We've got no way to specify null with annotations, so if the default parameter value is an empty string
+           * and this isn't a String parameter then treat that as null.
+           */
+          Class simpleClass = typeMapping.getSimpleClass();
+          if (hasContent(defaultValueString) || (simpleClass == String.class))
+          {
+            defaultValue = mapSimpleType(defaultValueString, simpleClass);
+          }
+        }
+        else
+        {
+          throw new InvalidEasyBeanAnnotation(beanClass, "Default value " + defaultValueString + " for parameter " + paramTypes[i].getSimpleName() + " must be a simple type.");
+        }
+        paramsInfo[i] = new OpenMBeanParameterInfoSupport(name, description, typeMapping.getOpenType(), defaultValue);
+      }
+      catch (OpenDataException e)
+      {
+        throw new InvalidEasyBeanAnnotation(beanClass, "Invalid default value " + defaultValueString + " for parameter " + paramTypes[i].getSimpleName());
+      }
     }
     
     return paramsInfo;

@@ -21,5 +21,6 @@ public @interface EasyBeanOperation
   String description() default "";
   String[] parameterNames() default {};
   String[] parameterDescriptions() default {};
+  String[] parameterDefaultValues() default {};
   OperationImpact impact() default OperationImpact.UNKNOWN;
 }

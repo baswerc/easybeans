@@ -99,6 +99,42 @@ class SharedMethods
     }
   }
 
+  static Object mapSimpleType(String value, Class toType) throws NumberFormatException
+  {
+    if ((toType == Byte.class) || (toType == byte.class))
+    {
+      return Byte.valueOf(value);
+    }
+    else if ((toType == Boolean.class) || (toType == boolean.class))
+    {
+      return Boolean.valueOf(value);
+    }
+    else if ((toType == Short.class) || (toType == short.class))
+    {
+      return Short.valueOf(value);
+    }
+    else if ((toType == Integer.class) || (toType == int.class))
+    {
+      return Integer.valueOf(value);
+    }
+    else if ((toType == Long.class) || (toType == long.class))
+    {
+      return Long.valueOf(value);
+    }
+    else if ((toType == Float.class) || (toType == float.class))
+    {
+      return Float.valueOf(value);
+    }
+    else if ((toType == Double.class) || (toType == double.class))
+    {
+      return Double.valueOf(value);
+    }
+    else
+    {
+      return value;
+    }
+  }
+
   static boolean classesEquivalent(Class<?> clazz, String canonicalName)
   {
     if (clazz.getCanonicalName().equals(canonicalName))
