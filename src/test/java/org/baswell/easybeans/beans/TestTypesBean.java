@@ -32,6 +32,11 @@ public class TestTypesBean
     return Arrays.asList(selfReferece, selfReferece, selfReferece);
   }
 
+  public List<?> unknownTypes()
+  {
+    return Arrays.asList("ONE", 2, true);
+  }
+
   public Map<String, List<SelfReferece>> getSelfReferenceMap()
   {
     Map<String, List<SelfReferece>> map = new HashMap<String, List<SelfReferece>>();

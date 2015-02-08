@@ -118,7 +118,14 @@ class OpenTypeMapper
         Object listObj = list.get(i);
         if (simpleType)
         {
-          Array.set(array, i, listObj);
+          if (elementTypeMapping.getSimpleClass() == String.class)
+          {
+            Array.set(array, i, listObj == null ? null : listObj.toString());
+          }
+          else
+          {
+            Array.set(array, i, listObj);
+          }
         }
         else
         {
