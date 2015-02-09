@@ -8,7 +8,7 @@ import java.lang.annotation.Target;
 import javax.management.ObjectName;
 
 /**
- * Easy bean metadata for an JMX MBean.
+ * Metadata for a JMX MBean.
  * 
  */
 @Target({ElementType.TYPE})
@@ -22,12 +22,12 @@ public @interface EasyBean
   String objectName() default "";
 
   /**
-   * The optional description of this easy bean.
+   * The optional description of this EasyBean.
    */
   String description() default "";
   
   /**
    * The type of exposure for fields, methods and constructors of this easy bean. Defaults to {@link EasyBeanExposure#ANNOTATED}.
    */
-  EasyBeanExposure expose() default EasyBeanExposure.ANNOTATED;
+  EasyBeanExposure exposure() default EasyBeanExposure.ANNOTATED;
 }

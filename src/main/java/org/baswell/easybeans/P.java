@@ -6,7 +6,10 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Metadata for a MBean operation parameter.
+ * Metadata for a MBean constructor or operation parameter. Consider using {@link org.baswell.easybeans.EasyBeanConstructor#parameterNames()} or
+ * {@link org.baswell.easybeans.EasyBeanOperation#parameterNames} for better readability. This annotation takes precedence over parameter
+ * values in {@link org.baswell.easybeans.EasyBeanConstructor} or {@link org.baswell.easybeans.EasyBeanOperation}.
+ *
  */
 @Target({ElementType.PARAMETER})
 @Retention(value=RetentionPolicy.RUNTIME)
@@ -22,17 +25,13 @@ public @interface P
    */
   String description() default "";
 
+  /**
+   * The default value for this parameter. Only the first element of the array will be used (can't specify null with annotations).
+   */
   String[] defaultValue() default {};
 
   /**
-   * {@link javax.management.Descriptor} information about this parameter. The number of descriptorNames must match the
-   * number of descriptor values so that descriptorNames[i] = descriptorValues[i].
+   * @see javax.management.MBeanFeatureInfo#getDescriptor()
    */
-  String[] descriptorNames() default {};
-
-  /**
-   * {@link javax.management.Descriptor} information about this parameter. The number of descriptorNames must match the
-   * number of descriptor values so that descriptorNames[i] = descriptorValues[i].
-   */
-  String[] descriptorValues() default {};
+  EasyBeanDescriptor[] descriptor() default {};
 }

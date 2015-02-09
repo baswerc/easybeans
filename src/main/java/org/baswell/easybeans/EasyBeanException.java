@@ -1,6 +1,9 @@
 package org.baswell.easybeans;
 
-public class EasyBeanException extends RuntimeException
+/**
+ * Base class for all EasyBean related exceptions.
+ */
+abstract class EasyBeanException extends RuntimeException
 {
   EasyBeanException(String message)
   {

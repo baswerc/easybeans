@@ -4,10 +4,15 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
-import static org.baswell.easybeans.OpenTypeMappingCreator.createOpenType;
+import static org.baswell.easybeans.OpenTypeMapper.mapAttributeToOpenType;
+import static org.baswell.easybeans.OpenTypeMapper.mapToOpenType;
 import static org.baswell.easybeans.SharedMethods.*;
 
-class BeanAttribute extends BeanMember
+/*
+ * The structure of an attribute. Loads information in EasyBeanAttribute and keeps track if attribute references Field
+ * or Method.
+ */
+class EasyBeanAttributeStructure extends EasyBeanMemberStructure
 {
   final boolean wasReadAnnotated;
 
@@ -19,7 +24,7 @@ class BeanAttribute extends BeanMember
 
   private final Method setter;
 
-  BeanAttribute(Class clazz, Field field)
+  EasyBeanAttributeStructure(Class clazz, Field field)
   {
     super(clazz);
 
@@ -43,10 +48,11 @@ class BeanAttribute extends BeanMember
       description = name = capatalize(field.getName());
     }
 
+    typeMapping = mapToOpenType(field);
     descriptor = getDescriptor(field);
   }
 
-  BeanAttribute(Class clazz, Method getter, Method setter, String getterSetterName)
+  EasyBeanAttributeStructure(Class clazz, Method getter, Method setter, String getterSetterName)
   {
     super(clazz);
 
@@ -89,38 +95,9 @@ class BeanAttribute extends BeanMember
     }
 
     field = null;
+    typeMapping = mapAttributeToOpenType(getter != null ? getter : setter);
     descriptor = getDescriptor(getter, setter);
   }
-
-  @Override
-  OpenTypeMapping getTypeMapping()
-  {
-    if (field != null)
-    {
-      return createOpenType(new EasyBeanOpenTypeWrapper(field));
-    }
-    else
-    {
-      return createOpenType(new EasyBeanOpenTypeWrapper(getter == null ? setter : getter));
-    }
-  }
-
-  EasyBeanOpenTypeWrapper getReadTypeWrapper()
-  {
-    if (field != null)
-    {
-      return new EasyBeanOpenTypeWrapper(field);
-    }
-    else if (getter != null)
-    {
-      return new EasyBeanOpenTypeWrapper(getter);
-    }
-    else
-    {
-      return null;
-    }
-  }
-
 
   boolean isIs()
   {

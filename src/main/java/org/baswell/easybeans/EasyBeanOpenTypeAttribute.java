@@ -6,25 +6,20 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Metadata for a MBean attribute.
- * 
+ * Metadata for how an object's attributes are mapped to {@link javax.management.openmbean.OpenType}.
  */
 @Target({ElementType.METHOD, ElementType.FIELD})
 @Retention(value=RetentionPolicy.RUNTIME)
-public @interface EasyBeanAttribute  
+public @interface EasyBeanOpenTypeAttribute
 {
   /**
-   * The JMX attribute name. If not provided the name will be created from the {@link java.lang.reflect.Field} or
+   * The open type attribute name. If not provided the name will be created from the {@link java.lang.reflect.Field} or
    * {@link java.lang.reflect.Method}.
-   *
-   * @see javax.management.openmbean.OpenMBeanAttributeInfo#getName()
    */
   String name() default "";
 
   /**
    * Optional description of this attribute.
-   *
-   * @see javax.management.openmbean.OpenMBeanAttributeInfo#getDescription()
    */
   String description() default "";
 }

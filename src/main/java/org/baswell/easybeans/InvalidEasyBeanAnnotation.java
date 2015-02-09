@@ -13,7 +13,7 @@ public class InvalidEasyBeanAnnotation extends EasyBeanException
 
   InvalidEasyBeanAnnotation(Class annotateClass, String message)
   {
-    super(message);
+    super(message + " (" + annotateClass.getCanonicalName() + ")");
     this.annotatedClass = annotateClass;
   }
 }

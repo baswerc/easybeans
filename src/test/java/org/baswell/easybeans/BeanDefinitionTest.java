@@ -10,7 +10,7 @@ public class BeanDefinitionTest
   {
     DuplicateAttributes da = new DuplicateAttributes();
 
-    BeanDefinition beanDefinition = new BeanDefinition(DuplicateAttributes.class);
+    EasyBeanStructure beanDefinition = new EasyBeanStructure(DuplicateAttributes.class);
 
     assertEquals(2, beanDefinition.attributes.size());
 

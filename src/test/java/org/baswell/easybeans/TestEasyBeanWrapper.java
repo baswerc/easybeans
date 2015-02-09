@@ -97,7 +97,7 @@ public class TestEasyBeanWrapper
     }
   }
 
-  @EasyBean(expose = EasyBeanExposure.ALL)
+  @EasyBean(exposure = EasyBeanExposure.ALL)
   class AnnotatedExposureBean
   {}
 

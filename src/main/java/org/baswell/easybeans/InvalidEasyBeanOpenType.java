@@ -14,7 +14,7 @@ public class InvalidEasyBeanOpenType extends EasyBeanException
 
   InvalidEasyBeanOpenType(Type openTypeClass, String message)
   {
-    super(message);
+    super(message + " (" + openTypeClass.getTypeName() + ")");
     this.openTypeClass = openTypeClass;
   }
 }

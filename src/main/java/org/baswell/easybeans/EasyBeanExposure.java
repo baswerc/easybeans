@@ -8,7 +8,7 @@ package org.baswell.easybeans;
 public enum EasyBeanExposure
 {
   /**
-   * Only expose public fields, methods and constructors annotated with {@link org.baswell.easybeans.EasyBeanAttribute} ,
+   * Only exposure public fields, methods and constructors annotated with {@link org.baswell.easybeans.EasyBeanAttribute} ,
    * {@link org.baswell.easybeans.EasyBeanOperation} or {@link org.baswell.easybeans.EasyBeanConstructor}.
    */
   ANNOTATED,

@@ -4,14 +4,14 @@ import javax.management.*;
 import javax.management.openmbean.*;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.*;
 
 import static org.baswell.easybeans.SharedMethods.*;
-import static org.baswell.easybeans.OpenTypeMappingCreator.*;
+import static org.baswell.easybeans.OpenTypeMapper.*;
+import static org.baswell.easybeans.OpenTypeConverter.*;
 
 /**
- * Wraps a Java object to expose their attributes and operations as a DynamicMBean. If you want to broadcast JMX notifications
+ * Wraps a Java object to exposure their attributes and operations as a DynamicMBean. If you want to broadcast JMX notifications
  * use {@link EasyBeanNotificationWrapper}
  *
  */
@@ -23,18 +23,16 @@ public class EasyBeanWrapper implements DynamicMBean
   MBeanInfo mBeanInfo;
   ObjectName objectName;
 
-  Map<String, BeanAttribute> attributeReadMap;
-  Map<String, BeanAttribute> attributeWriteMap;
-  Map<String, List<BeanOperation>> operationMap;
-  
-  OpenTypeMapper openTypeMapper;
+  Map<String, EasyBeanAttributeStructure> readableAttributeStructures;
+  Map<String, EasyBeanAttributeStructure> writableAttributeStructures;
+  Map<String, List<EasyBeanOperationStructure>> operationStructures;
 
   /**
    *
-   * @param bean
-   * @throws InvalidEasyBeanNameException
-   * @throws InvalidEasyBeanAnnotation
-   * @throws InvalidEasyBeanOpenType
+   * @param bean The bean to wrap as a DynamicMBean.
+   * @throws InvalidEasyBeanNameException If the ObjectName used for this bean in invalid.
+   * @throws InvalidEasyBeanAnnotation If an EasyBean annotation is used incorrectly.
+   * @throws InvalidEasyBeanOpenType If the given object (or a descendant of this object) cannot be mapped to an OpenType.
    */
   public EasyBeanWrapper(Object bean) throws InvalidEasyBeanNameException, InvalidEasyBeanAnnotation, InvalidEasyBeanOpenType
   {
@@ -43,26 +41,22 @@ public class EasyBeanWrapper implements DynamicMBean
 
   /**
    *
-   * @param bean
-   * @param exposure
-   * @throws InvalidEasyBeanNameException
-   * @throws InvalidEasyBeanAnnotation
-   * @throws InvalidEasyBeanOpenType
+   * @param bean The bean to wrap as a DynamicMBean.
+   * @param exposure Overrides the EasyBeanExposure annotated by the given bean object.
+   * @throws InvalidEasyBeanNameException If the ObjectName used for this bean in invalid.
+   * @throws InvalidEasyBeanAnnotation If an EasyBean annotation is used incorrectly.
+   * @throws InvalidEasyBeanOpenType If the given object (or a descendant of this object) cannot be mapped to an OpenType.
    */
   public EasyBeanWrapper(Object bean, EasyBeanExposure exposure) throws InvalidEasyBeanNameException, InvalidEasyBeanAnnotation, InvalidEasyBeanOpenType
   {
     this.bean = bean;
-    openTypeMapper = new OpenTypeMapper();
-    
     Class clazz = bean.getClass();
-    String className = clazz.getCanonicalName();
-    String description = null;
-    EasyBean easyBeanAnnotation = (EasyBean)clazz.getAnnotation(EasyBean.class);
+    EasyBeanStructure beanStructure = new EasyBeanStructure(clazz);
 
     String objectNameString = null;
-    if ((easyBeanAnnotation != null) && !nullEmpty(easyBeanAnnotation.objectName()))
+    if (hasContent(beanStructure.objectName))
     {
-      objectNameString = easyBeanAnnotation.objectName();
+      objectNameString = beanStructure.objectName;
     }
     else
     {
@@ -88,27 +82,21 @@ public class EasyBeanWrapper implements DynamicMBean
       {
         this.exposure = exposure;
       }
-      else if (easyBeanAnnotation != null)
+      else if (beanStructure.exposure != null)
       {
-        this.exposure = easyBeanAnnotation.expose();
+        this.exposure = beanStructure.exposure;
       }
       else
       {
         this.exposure = EasyBeanExposure.ANNOTATED;
       }
 
-      if(easyBeanAnnotation != null)
-      {
-        description = easyBeanAnnotation.description();
-      }
-
-      BeanDefinition beanDefinition = new BeanDefinition(clazz);
-      OpenMBeanConstructorInfo[] constructorInfo = loadConstructorInfo(beanDefinition.constructors);
-      OpenMBeanAttributeInfo[] attributeInfo = loadAttributeInfo(beanDefinition.attributes);
-      OpenMBeanOperationInfo[] opInfo = loadOperationInfo(beanDefinition.operations);
+      OpenMBeanConstructorInfo[] constructorInfo = loadConstructorInfo(beanStructure.constructors);
+      OpenMBeanAttributeInfo[] attributeInfo = loadAttributeInfo(beanStructure.attributes);
+      OpenMBeanOperationInfo[] opInfo = loadOperationInfo(beanStructure.operations);
       MBeanNotificationInfo[] notificationInfo = loadNotificationInfo();
 
-      mBeanInfo = new OpenMBeanInfoSupport(className, description, attributeInfo, constructorInfo, opInfo, notificationInfo, beanDefinition.descriptor);
+      mBeanInfo = new OpenMBeanInfoSupport(beanStructure.className, beanStructure.description, attributeInfo, constructorInfo, opInfo, notificationInfo, beanStructure.descriptor);
     }
     catch (MalformedObjectNameException monexc)
     {
@@ -119,15 +107,15 @@ public class EasyBeanWrapper implements DynamicMBean
   @Override
   public Object getAttribute(String attribute) throws AttributeNotFoundException, MBeanException, ReflectionException
   {
-    if (!attributeReadMap.containsKey(attribute))
+    if (!readableAttributeStructures.containsKey(attribute))
     {
       throw new AttributeNotFoundException("No readable attribute found with name '" + attribute + "'.");
     }
     try
     {
-      BeanAttribute beanAttribute = attributeReadMap.get(attribute);
+      EasyBeanAttributeStructure beanAttribute = readableAttributeStructures.get(attribute);
       Object value = beanAttribute.get(bean);
-      return openTypeMapper.map(value, beanAttribute.getTypeMapping());
+      return convertToOpenType(value, beanAttribute.typeMapping);
     }
     catch (Exception exc)
     {
@@ -170,40 +158,25 @@ public class EasyBeanWrapper implements DynamicMBean
   @Override
   public Object invoke(String actionName, Object[] params, String[] signature) throws MBeanException, ReflectionException
   {
-    List<BeanOperation> operations = operationMap.get(actionName);
-
-    for (BeanOperation operation : operations)
+    if (operationStructures.containsKey(actionName))
     {
-      Method method = operation.method;
-      
-      Class<?>[] sigClasses = method.getParameterTypes();
-      
-      if (sigClasses.length == signature.length)
+      List<EasyBeanOperationStructure> operations = operationStructures.get(actionName);
+
+      for (EasyBeanOperationStructure operation : operations)
       {
-        boolean matched = true;
-        for (int i = 0; i < sigClasses.length; i++)
-        {
-          if (!classesEquivalent(sigClasses[i], signature[i]))
-          {
-            matched = false;
-            break;
-          }
-        }
-        
-        if (matched)
+        if (operation.signatureMatches(signature))
         {
           try
           {
-            Object value = method.invoke(bean, params);
-            return openTypeMapper.map(value, operation.getTypeMapping());
+            return convertToOpenType(operation.invoke(bean, params), operation.typeMapping);
           }
           catch (Throwable exc)
           {
             if (exc instanceof InvocationTargetException)
             {
-              exc = ((InvocationTargetException)exc).getTargetException();
+              exc = ((InvocationTargetException) exc).getTargetException();
             }
-            
+
             String line = exc.getStackTrace()[0].toString();
             throw new RuntimeException("Unable to execute operation " + actionName + " due to error: " + exc.getMessage() + " at line: " + line);
           }
@@ -211,7 +184,7 @@ public class EasyBeanWrapper implements DynamicMBean
       }
     }
 
-    throw new NoSuchElementException("No matching operation found with name " + actionName);
+    throw new NoSuchElementException("No matching operation found with name " + actionName + " and signature " + signature);
   }
 
   /**
@@ -222,7 +195,7 @@ public class EasyBeanWrapper implements DynamicMBean
   public void setAttribute(Attribute attribute) throws AttributeNotFoundException, InvalidAttributeValueException, MBeanException, ReflectionException
   {
     String attName = attribute.getName();
-    if (!attributeWriteMap.containsKey(attName))
+    if (!writableAttributeStructures.containsKey(attName))
     {
       throw new AttributeNotFoundException("No writeable attribute found with name '" + attName + "'.");
     }
@@ -230,7 +203,7 @@ public class EasyBeanWrapper implements DynamicMBean
     {
       try
       {
-        attributeWriteMap.get(attName).set(bean, attribute.getValue());
+        writableAttributeStructures.get(attName).set(bean, attribute.getValue());
       }
       catch (Exception exc)
       {
@@ -272,11 +245,11 @@ public class EasyBeanWrapper implements DynamicMBean
     return new MBeanNotificationInfo[0];
   }
 
-  OpenMBeanConstructorInfo[] loadConstructorInfo(List<BeanConstructor> beanConstructors)
+  OpenMBeanConstructorInfo[] loadConstructorInfo(List<EasyBeanConstructorStructure> beanConstructors)
   {
     List<OpenMBeanConstructorInfo> constructorsInfo = new ArrayList<OpenMBeanConstructorInfo>();
     
-    for (BeanConstructor beanConstructor : beanConstructors)
+    for (EasyBeanConstructorStructure beanConstructor : beanConstructors)
     {
       if (beanConstructor.wasAnnotated || (exposure == EasyBeanExposure.ALL))
       {
@@ -291,32 +264,32 @@ public class EasyBeanWrapper implements DynamicMBean
     return constructorsInfo.toArray(new OpenMBeanConstructorInfo[constructorsInfo.size()]);
   }
   
-  OpenMBeanAttributeInfo[] loadAttributeInfo(List<BeanAttribute> beanAttributes)
+  OpenMBeanAttributeInfo[] loadAttributeInfo(List<EasyBeanAttributeStructure> beanAttributes)
   {
-    attributeReadMap = new HashMap<String, BeanAttribute>();
-    attributeWriteMap = new HashMap<String, BeanAttribute>();
+    readableAttributeStructures = new HashMap<String, EasyBeanAttributeStructure>();
+    writableAttributeStructures = new HashMap<String, EasyBeanAttributeStructure>();
     
     List<OpenMBeanAttributeInfo> attributesInfo = new ArrayList<OpenMBeanAttributeInfo>();
     
-    for (BeanAttribute beanAttribute : beanAttributes)
+    for (EasyBeanAttributeStructure beanAttribute : beanAttributes)
     {
-      if (beanAttribute.getTypeMapping() != null)
+      if (beanAttribute.typeMapping != null)
       {
         boolean isReadable = beanAttribute.hasReadAccess() && (beanAttribute.wasReadAnnotated || (exposure != EasyBeanExposure.ANNOTATED));
-        boolean isWriteable = beanAttribute.hasWriteAccess() && (beanAttribute.wasWriteAnnotated || (exposure == EasyBeanExposure.ALL));
+        boolean isWritable = beanAttribute.hasWriteAccess() && (beanAttribute.wasWriteAnnotated || (exposure == EasyBeanExposure.ALL));
 
-        if (isReadable || isWriteable)
+        if (isReadable || isWritable)
         {
-          attributesInfo.add(new OpenMBeanAttributeInfoSupport(beanAttribute.name, beanAttribute.description, (OpenType<Long>) beanAttribute.getTypeMapping().getOpenType(), isReadable, isWriteable, beanAttribute.isIs(), beanAttribute.descriptor));
+          attributesInfo.add(new OpenMBeanAttributeInfoSupport(beanAttribute.name, beanAttribute.description, (OpenType<Long>) beanAttribute.typeMapping.getOpenType(), isReadable, isWritable, beanAttribute.isIs(), beanAttribute.descriptor));
 
           if (isReadable)
           {
-            attributeReadMap.put(beanAttribute.name, beanAttribute);
+            readableAttributeStructures.put(beanAttribute.name, beanAttribute);
           }
 
-          if (isWriteable)
+          if (isWritable)
           {
-            attributeWriteMap.put(beanAttribute.name, beanAttribute);
+            writableAttributeStructures.put(beanAttribute.name, beanAttribute);
           }
         }
       }
@@ -329,34 +302,35 @@ public class EasyBeanWrapper implements DynamicMBean
         return a1.getName().compareTo(a2.getName());
       }
     });
+
     return attributesInfo.toArray(new OpenMBeanAttributeInfoSupport[attributesInfo.size()]);
   }
 
-  OpenMBeanOperationInfo[] loadOperationInfo(List<BeanOperation> beanOperations)
+  OpenMBeanOperationInfo[] loadOperationInfo(List<EasyBeanOperationStructure> beanOperations)
   {
-    operationMap = new HashMap<String, List<BeanOperation>>();
+    operationStructures = new HashMap<String, List<EasyBeanOperationStructure>>();
     List<OpenMBeanOperationInfo> operationsInfo = new ArrayList<OpenMBeanOperationInfo>();
     
-    for (BeanOperation beanOperation : beanOperations)
+    for (EasyBeanOperationStructure beanOperation : beanOperations)
     {
-      if (beanOperation.getTypeMapping() != null)
+      if (beanOperation.typeMapping != null)
       {
         if (beanOperation.wasAnnotated || (exposure == EasyBeanExposure.ALL))
         {
           OpenMBeanParameterInfo[] paramsInfo = getParameterInfo(bean.getClass(), beanOperation.method.getParameterTypes(), beanOperation.method.getParameterAnnotations(), beanOperation.parameterNames, beanOperation.parameterDescriptions, beanOperation.parameterDefaultValues);
           if (paramsInfo != null)
           {
-            operationsInfo.add(new OpenMBeanOperationInfoSupport(beanOperation.name, beanOperation.description, paramsInfo, beanOperation.getTypeMapping().getOpenType(), beanOperation.impact.getMBeanImpact(), beanOperation.descriptor));
+            operationsInfo.add(new OpenMBeanOperationInfoSupport(beanOperation.name, beanOperation.description, paramsInfo, beanOperation.typeMapping.getOpenType(), beanOperation.impact.getMBeanImpact(), beanOperation.descriptor));
 
-            List<BeanOperation> operationsWithSameName;
-            if (operationMap.containsKey(beanOperation.name))
+            List<EasyBeanOperationStructure> operationsWithSameName;
+            if (operationStructures.containsKey(beanOperation.name))
             {
-              operationsWithSameName = operationMap.get(beanOperation.name);
+              operationsWithSameName = operationStructures.get(beanOperation.name);
             }
             else
             {
-              operationsWithSameName = new ArrayList<BeanOperation>();
-              operationMap.put(beanOperation.name, operationsWithSameName);
+              operationsWithSameName = new ArrayList<EasyBeanOperationStructure>();
+              operationStructures.put(beanOperation.name, operationsWithSameName);
             }
 
             operationsWithSameName.add(beanOperation);
@@ -405,7 +379,7 @@ public class EasyBeanWrapper implements DynamicMBean
     for (int i = 0; i < paramTypes.length; i++)
     {
       String name = "arg" + i;
-      OpenTypeMapping typeMapping = createOpenType(new EasyBeanOpenTypeWrapper(paramTypes[i]));
+      OpenTypeMapping typeMapping = mapToOpenType(paramTypes[i]);
       
       if (typeMapping == null)
       {
@@ -427,13 +401,14 @@ public class EasyBeanWrapper implements DynamicMBean
         description = name;
       }
 
+
       String defaultValueString = null;
       if ((parameterDefaultValues != null) && (parameterDefaultValues.length > i))
       {
         defaultValueString = parameterDefaultValues[i];
       }
 
-
+      List<Pair<String, Object>> descriptorPairs = new ArrayList<Pair<String, Object>>();
       for (Annotation annotation : annotations[i])
       {
         if (annotation instanceof P)
@@ -442,36 +417,40 @@ public class EasyBeanWrapper implements DynamicMBean
           if (jmxParameter.value().trim().length() > 0) name = jmxParameter.value();
           if (jmxParameter.description().trim().length() > 0) description = jmxParameter.description();
           if (jmxParameter.defaultValue().length > 0) defaultValueString = jmxParameter.defaultValue()[0];
-          
+
+          for (EasyBeanDescriptor easyBeanDescriptor : jmxParameter.descriptor())
+          {
+            int count = Math.min(easyBeanDescriptor.names().length, easyBeanDescriptor.values().length);
+            for (int j = 0; j < count; j++)
+            {
+              descriptorPairs.add(Pair.pair(easyBeanDescriptor.names()[i], (Object)easyBeanDescriptor.values()[i]));
+            }
+          }
           break;
         }
       }
 
-      try
+      if ((defaultValueString != null) && typeMapping.isSimpleType())
       {
-        Object defaultValue = null;
-        if ((defaultValueString != null) && typeMapping.isSimpleType())
+        /*
+         * We've got no way to specify null with annotations, so if the default parameter value is an empty string
+         * and this isn't a String parameter then treat that as null.
+         */
+        Class simpleClass = typeMapping.getSimpleClass();
+        if (hasContent(defaultValueString) || (simpleClass == String.class))
         {
-          /*
-           * We've got no way to specify null with annotations, so if the default parameter value is an empty string
-           * and this isn't a String parameter then treat that as null.
-           */
-          Class simpleClass = typeMapping.getSimpleClass();
-          if (hasContent(defaultValueString) || (simpleClass == String.class))
-          {
-            defaultValue = mapSimpleType(defaultValueString, simpleClass);
-          }
+          descriptorPairs.add(Pair.pair("defaultValue", mapSimpleType(defaultValueString, simpleClass)));
         }
-        else
-        {
-          throw new InvalidEasyBeanAnnotation(beanClass, "Default value " + defaultValueString + " for parameter " + paramTypes[i].getSimpleName() + " must be a simple type.");
-        }
-        paramsInfo[i] = new OpenMBeanParameterInfoSupport(name, description, typeMapping.getOpenType(), defaultValue);
       }
-      catch (OpenDataException e)
+      else
       {
-        throw new InvalidEasyBeanAnnotation(beanClass, "Invalid default value " + defaultValueString + " for parameter " + paramTypes[i].getSimpleName());
+        throw new InvalidEasyBeanAnnotation(beanClass, "Default value " + defaultValueString + " for parameter " + paramTypes[i].getSimpleName() + " must be a simple type.");
       }
+      Descriptor descriptor = descriptorPairs.isEmpty() ? null : getDescriptorFromPairs(descriptorPairs);
+      /*
+       * The (OpenType<Integer>) cast here is BS to get the compiler not to complain about the constructor being ambiguous.
+       */
+      paramsInfo[i] = new OpenMBeanParameterInfoSupport(name, description, (OpenType<Integer>)typeMapping.getOpenType(), descriptor);
     }
     
     return paramsInfo;

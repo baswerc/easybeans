@@ -6,9 +6,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Provides meta data for a MBean operation.
- * 
- * @author Corey Baswell
+ * MetaData for a JMX MBean operation.
  *
  */
 @Target({ElementType.CONSTRUCTOR})
@@ -16,13 +14,30 @@ import java.lang.annotation.Target;
 public @interface EasyBeanConstructor
 {
   /**
-   * Specify this attribute if you need to override the operation name based
-   * on the constructor name of this annotation.
+   * The JMX constructor name name. If not provided the name will be created from the {@link java.lang.reflect.Constructor}.
+   *
+   * @see javax.management.openmbean.OpenMBeanOperationInfo#getName()
    */
   String name() default "";
+
+  /**
+   * Optional description of this attribute.
+   *
+   * @see javax.management.openmbean.OpenMBeanOperationInfo#getDescription()
+   */
   String description() default "";
+
+  /**
+   * The names of the parameters (in order) for this constructor.
+   *
+   * @see javax.management.openmbean.OpenMBeanParameterInfo#getName()
+   */
   String[] parameterNames() default {};
+
+  /**
+   * The descriptions of the parameters (in order) for this constructor.
+   *
+   * @see javax.management.openmbean.OpenMBeanParameterInfo#getDescription()
+   */
   String[] parameterDescriptions() default {};
-  String[] descriptorNames() default {};
-  String[] descriptorValues() default {};
 }

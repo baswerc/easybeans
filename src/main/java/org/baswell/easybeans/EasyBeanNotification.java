@@ -14,8 +14,23 @@ import java.lang.annotation.Target;
 @Retention(value=RetentionPolicy.RUNTIME)
 public @interface EasyBeanNotification
 {
+  /**
+   * @see javax.management.MBeanNotificationInfo#getNotifTypes()
+   */
   String[] types();
+
+  /**
+   * @see javax.management.MBeanFeatureInfo#getName()
+   */
   String name();
+
+  /**
+   * @see javax.management.MBeanFeatureInfo#getDescription()
+   */
   String description() default "";
-  EasyBeanDescription[] descriptor() default {};
+
+  /**
+   * @see javax.management.MBeanFeatureInfo#getDescriptor()
+   */
+  EasyBeanDescriptor[] descriptor() default {};
 }

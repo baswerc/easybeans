@@ -1,199 +1,346 @@
 package org.baswell.easybeans;
 
-import java.lang.reflect.Array;
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
+import java.lang.reflect.*;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.sql.Date;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
+import javax.management.ObjectName;
 import javax.management.openmbean.ArrayType;
-import javax.management.openmbean.CompositeData;
-import javax.management.openmbean.CompositeDataSupport;
 import javax.management.openmbean.CompositeType;
 import javax.management.openmbean.OpenDataException;
+import javax.management.openmbean.OpenType;
 import javax.management.openmbean.SimpleType;
-import javax.management.openmbean.TabularData;
-import javax.management.openmbean.TabularDataSupport;
 import javax.management.openmbean.TabularType;
 
+import static org.baswell.easybeans.Pair.*;
+
+/*
+ * Maps Java objects to OpenTypes.
+ */
 @SuppressWarnings("unchecked")
 class OpenTypeMapper
 {
-  Object map(Object obj, OpenTypeMapping typeMapping) throws OpenDataException
+  static Map<Class, OpenTypeMapping> simpleTypeMapping = new ConcurrentHashMap<Class, OpenTypeMapping>();
+  static
   {
-    if (typeMapping.isSimpleType())
+    simpleTypeMapping.put(Object.class, new OpenTypeMapping(SimpleType.STRING, String.class));
+    simpleTypeMapping.put(String.class, new OpenTypeMapping(SimpleType.STRING, String.class));
+    simpleTypeMapping.put(BigDecimal.class, new OpenTypeMapping(SimpleType.BIGDECIMAL, BigDecimal.class));
+    simpleTypeMapping.put(BigInteger.class, new OpenTypeMapping(SimpleType.BIGINTEGER, BigDecimal.class));
+    simpleTypeMapping.put(boolean.class, new OpenTypeMapping(SimpleType.BOOLEAN, Boolean.class));
+    simpleTypeMapping.put(Boolean.class, new OpenTypeMapping(SimpleType.BOOLEAN, Boolean.class));
+    simpleTypeMapping.put(byte.class, new OpenTypeMapping(SimpleType.BYTE, Byte.class));
+    simpleTypeMapping.put(Byte.class, new OpenTypeMapping(SimpleType.BYTE, Byte.class));
+    simpleTypeMapping.put(char.class, new OpenTypeMapping(SimpleType.CHARACTER, Character.class));
+    simpleTypeMapping.put(Character.class, new OpenTypeMapping(SimpleType.CHARACTER, Character.class));
+    simpleTypeMapping.put(Date.class, new OpenTypeMapping(SimpleType.DATE, Date.class));
+    simpleTypeMapping.put(double.class, new OpenTypeMapping(SimpleType.DOUBLE, Double.class));
+    simpleTypeMapping.put(Double.class, new OpenTypeMapping(SimpleType.DOUBLE, Double.class));
+    simpleTypeMapping.put(float.class, new OpenTypeMapping(SimpleType.FLOAT, Float.class));
+    simpleTypeMapping.put(Float.class, new OpenTypeMapping(SimpleType.FLOAT, Float.class));
+    simpleTypeMapping.put(int.class, new OpenTypeMapping(SimpleType.INTEGER, Integer.class));
+    simpleTypeMapping.put(Integer.class, new OpenTypeMapping(SimpleType.INTEGER, Integer.class));
+    simpleTypeMapping.put(long.class, new OpenTypeMapping(SimpleType.LONG, Long.class));
+    simpleTypeMapping.put(Long.class, new OpenTypeMapping(SimpleType.LONG, Long.class));
+    simpleTypeMapping.put(ObjectName.class, new OpenTypeMapping(SimpleType.OBJECTNAME, ObjectName.class));
+    simpleTypeMapping.put(short.class, new OpenTypeMapping(SimpleType.SHORT, Short.class));
+    simpleTypeMapping.put(Short.class, new OpenTypeMapping(SimpleType.SHORT, Short.class));
+    simpleTypeMapping.put(long.class, new OpenTypeMapping(SimpleType.LONG, Long.class));
+    simpleTypeMapping.put(Long.class, new OpenTypeMapping(SimpleType.LONG, Long.class));
+    simpleTypeMapping.put(void.class, new OpenTypeMapping(SimpleType.VOID, Void.class));
+    simpleTypeMapping.put(Void.class, new OpenTypeMapping(SimpleType.VOID, Void.class));
+  }
+
+  static OpenTypeMapping mapToOpenType(Class clazz)
+  {
+    return mapOpenType(new EasyBeanOpenTypeStructure(clazz));
+  }
+
+  static OpenTypeMapping mapToOpenType(Field field)
+  {
+    return mapOpenType(new EasyBeanOpenTypeStructure(field));
+  }
+
+  static OpenTypeMapping mapAttributeToOpenType(Method method)
+  {
+    return mapOpenType(new EasyBeanOpenTypeStructure(method, true));
+  }
+
+  static OpenTypeMapping mapOperationToOpenType(Method method)
+  {
+    return mapOpenType(new EasyBeanOpenTypeStructure(method, false));
+  }
+
+  static OpenTypeMapping mapOpenType(EasyBeanOpenTypeStructure typeWrapper)
+  {
+    return mapOpenType(typeWrapper, new ArrayList<Class>());
+  }
+
+  static OpenTypeMapping mapOpenType(EasyBeanOpenTypeStructure typeWrapper, List<Class> compositedClassesVisited)
+  {
+    Class rawClass = typeWrapper.getRawClass();
+
+    if (typeWrapper.isTransient())
     {
-      if (typeMapping.getOpenType() == SimpleType.STRING)
-      {
-        return (obj == null) ? null : obj.toString();
-      }
-      else
-      {
-        return obj;
-      }
+      return null;
     }
-    else if (typeMapping.isArrayType())
+    else if (simpleTypeMapping.containsKey(rawClass))
     {
-      return mapArray(obj, typeMapping);
+      return simpleTypeMapping.get(rawClass);
     }
-    else if (typeMapping.isTabularType())
+    else if (extendsClass(rawClass, Enum.class))
     {
-      return mapTable(obj, typeMapping);
+      return simpleTypeMapping.get(String.class);
+    }
+    else if (rawClass.isArray() || implementsInterface(rawClass, Iterable.class))
+    {
+      return mapArrayType(typeWrapper, compositedClassesVisited);
+    }
+    else if (implementsInterface(rawClass, Map.class))
+    {
+      return mapTabularType(typeWrapper, compositedClassesVisited);
     }
     else
     {
-      return mapComposite(obj, typeMapping);
+      return mapCompositeType(typeWrapper, compositedClassesVisited);
     }
   }
 
-  Object mapArray(Object obj, OpenTypeMapping typeMapping) throws OpenDataException
+  static OpenTypeMapping mapArrayType(EasyBeanOpenTypeStructure typeWrapper, List<Class> compositedClassesVisited)
   {
-    OpenTypeMapping elementTypeMapping = typeMapping.getElementTypeMapping();
+    Type type = typeWrapper.getType();
+    Class rawClass = typeWrapper.getRawClass();
 
-    if (obj.getClass().isArray())
+    try
     {
-      if (elementTypeMapping.isSimpleType())
+      if (rawClass.isArray())
       {
-        return obj;
+        int numDimensions = numberArrayDimensions(rawClass);
+        OpenTypeMapping elementTypeMapping = null;
+
+        if (type instanceof GenericArrayType)
+        {
+          GenericArrayType arrayType = (GenericArrayType)type;
+          Type componentType = getArrayComponentType(arrayType);
+          elementTypeMapping = mapOpenType(new EasyBeanOpenTypeStructure(componentType), compositedClassesVisited);
+        }
+        else
+        {
+          Class componentClass = getArrayComponentClass(rawClass);
+          elementTypeMapping = mapOpenType(new EasyBeanOpenTypeStructure(componentClass), compositedClassesVisited);
+        }
+
+        if (elementTypeMapping == null)
+        {
+          return null;
+        }
+        else
+        {
+          return new OpenTypeMapping(new ArrayType(numDimensions, elementTypeMapping.getOpenType()), elementTypeMapping);
+        }
       }
       else
       {
-        ArrayType arrayType = typeMapping.getArrayType();
-        int numDimensions = arrayType.getDimension();
-
-        if (numDimensions == 1)
+        Type componentType = null;
+        if (type instanceof ParameterizedType)
         {
-          int length = Array.getLength(obj);
-          CompositeData[] compositeData = new CompositeData[length];
-          for (int i = 0; i < length; i++)
+          ParameterizedType paramType = (ParameterizedType)type;
+          if (paramType.getActualTypeArguments().length == 1)
           {
-            compositeData[i] = mapComposite(Array.get(obj, i), elementTypeMapping);
+            componentType = paramType.getActualTypeArguments()[0];
           }
+        }
 
-          return compositeData;
+        if (componentType == null)
+        {
+          componentType = String.class; // If we can't find the component type then we'll just display it as an array of strings
+        }
+
+        OpenTypeMapping listTypeMapping = mapOpenType(new EasyBeanOpenTypeStructure(componentType), compositedClassesVisited);
+        if (listTypeMapping == null)
+        {
+          return null;
         }
         else
         {
-          int[] dimensions = new int[numDimensions];
-          for (int i = 0; i < numDimensions; i++)
-          {
-            dimensions[i] = Array.getLength(Array.get(obj, i));
-          }
-
-          Object compositeData = Array.newInstance(CompositeData.class, dimensions);
-
-          for (int i = 0; i < numDimensions; i++)
-          {
-            Object indexArray = Array.get(obj, i);
-            int length = Array.getLength(indexArray);
-            Object indexCompositeData = Array.newInstance(CompositeData.class, length);
-            for (int j = 0; j < length; j++)
-            {
-              Array.set(indexCompositeData, j, mapComposite(Array.get(indexArray, j), elementTypeMapping));
-            }
-            Array.set(compositeData, i, indexCompositeData);
-          }
-
-          return compositeData;
+          return new OpenTypeMapping(new ArrayType(1, listTypeMapping.getOpenType()), listTypeMapping);
         }
       }
     }
-    else if (obj instanceof Iterable)
+    catch (OpenDataException odexc)
     {
-      Iterable iterable = (Iterable)obj;
-      List list = new ArrayList();
-      for (Object listObj : iterable)
+      throw new RuntimeException(odexc);
+    }
+  }
+
+  static OpenTypeMapping mapTabularType(EasyBeanOpenTypeStructure typeWrapper, List<Class> compositedClassesVisited)
+  {
+    Type type = typeWrapper.getType();
+    Class rawClass = typeWrapper.getRawClass();
+
+    Pair<Type, Type> keyValueTypePair = null;
+
+    if (type instanceof ParameterizedType)
+    {
+      ParameterizedType paramType = (ParameterizedType)type;
+      Type[] typeArgs = paramType.getActualTypeArguments();
+      if (typeArgs.length == 2)
       {
-        list.add(listObj);
+        keyValueTypePair = pair(typeArgs[0], typeArgs[1]);
+      }
+    }
+
+    if (keyValueTypePair == null)
+    {
+      keyValueTypePair = pair((Type) String.class, (Type) String.class);
+    }
+
+    OpenTypeMapping keyMapping = mapOpenType(new EasyBeanOpenTypeStructure(keyValueTypePair.x), compositedClassesVisited);
+    OpenTypeMapping valueMapping = mapOpenType(new EasyBeanOpenTypeStructure(keyValueTypePair.y), compositedClassesVisited);
+
+    if ((keyMapping == null) || (valueMapping == null))
+    {
+      return null;
+    }
+
+
+    String[] attributeNames = new String[] {"key", "value"};
+    String[] attributeDescriptions = new String[] {"Map key", "Map value"};
+    OpenType[] attributeTypes = new OpenType[] {keyMapping.getOpenType(), valueMapping.getOpenType()};
+
+    try
+    {
+      CompositeType rowType = new CompositeType(typeWrapper.getName(), typeWrapper.getDescription(), attributeNames, attributeDescriptions, attributeTypes);
+      return new OpenTypeMapping(new TabularType(typeWrapper.getName(), typeWrapper.getDescription(), rowType, new String[] {"key"}), keyMapping, valueMapping);
+    }
+    catch (OpenDataException odexc)
+    {
+      throw new RuntimeException(odexc);
+    }
+  }
+
+  static OpenTypeMapping mapCompositeType(EasyBeanOpenTypeStructure typeWrapper, List<Class> compositedClassesVisited)
+  {
+    Class rawClass = typeWrapper.getRawClass();
+
+    /*
+     * Prevent infinite loops. Don't have a way to define self referring types.
+     */
+    if (compositedClassesVisited.contains(rawClass))
+    {
+      return simpleTypeMapping.get(String.class);
+    }
+
+    try
+    {
+      compositedClassesVisited.add(rawClass);
+
+      Map<String, Pair<EasyBeanOpenTypeStructure, OpenTypeMapping>> attributeMappings = new HashMap<String, Pair<EasyBeanOpenTypeStructure,OpenTypeMapping>>();
+      List<String> attributeNameList = new ArrayList<String>();
+      List<String> attributeDescriptionList = new ArrayList<String>();
+      List<OpenType> attributeTypeList = new ArrayList<OpenType>();
+
+      for (EasyBeanOpenTypeStructure attributeTypeWrapper : typeWrapper.getAttributes())
+      {
+        OpenTypeMapping attributeTypeMapping = mapOpenType(attributeTypeWrapper, compositedClassesVisited);
+        if (attributeTypeMapping != null)
+        {
+          attributeMappings.put(attributeTypeWrapper.getName(), pair(attributeTypeWrapper, attributeTypeMapping));
+          attributeNameList.add(attributeTypeWrapper.getName());
+          attributeDescriptionList.add(attributeTypeWrapper.getDescription());
+          attributeTypeList.add(attributeTypeMapping.getOpenType());
+        }
       }
 
-      int length = list.size();
-      boolean simpleType = elementTypeMapping.isSimpleType();
-      Object array = Array.newInstance((simpleType ? elementTypeMapping.getSimpleClass() : CompositeData.class), length);
-
-      for (int i = 0; i < length; i++)
+      if (attributeNameList.size() == 0)
       {
-        Object listObj = list.get(i);
-        if (simpleType)
-        {
-          if (elementTypeMapping.getSimpleClass() == String.class)
-          {
-            Array.set(array, i, listObj == null ? null : listObj.toString());
-          }
-          else
-          {
-            Array.set(array, i, listObj);
-          }
-        }
-        else
-        {
-          Array.set(array, i, mapComposite(listObj, elementTypeMapping));
-        }
+        return null;
       }
+      else
+      {
+        String[] attributeNames = attributeNameList.toArray(new String[attributeNameList.size()]);
+        String[] attributeDescriptions = attributeDescriptionList.toArray(new String[attributeDescriptionList.size()]);
+        OpenType[] attributeTypes = attributeTypeList.toArray(new OpenType[attributeTypeList.size()]);
 
-      return array;
+        return new OpenTypeMapping(new CompositeType(typeWrapper.getName(), typeWrapper.getDescription(), attributeNames, attributeDescriptions, attributeTypes), attributeMappings);
+      }
+    }
+    catch (OpenDataException odexc)
+    {
+      throw new RuntimeException(odexc);
+    }
+    finally
+    {
+      compositedClassesVisited.remove(rawClass);
+    }
+  }
+
+  static boolean implementsInterface(Class clazz, Class interfce)
+  {
+    if (clazz.equals(interfce))
+    {
+      return true;
     }
     else
     {
-      return obj; // Should never get here
+      Class[] superInterfaces = clazz.getInterfaces();
+      for (Class superInterface : superInterfaces)
+      {
+        if (implementsInterface(superInterface, interfce))
+        {
+          return true;
+        }
+      }
+      return false;
     }
   }
 
-  TabularData mapTable(Object obj, OpenTypeMapping typeMapping) throws OpenDataException
+  static boolean extendsClass(Class clazz, Class superClass)
   {
-    Map map = (Map)obj;
-
-    TabularType tabularType = typeMapping.getTabularType();
-    CompositeType rowType = tabularType.getRowType();
-
-    TabularDataSupport tabularData = new TabularDataSupport(tabularType);
-
-    OpenTypeMapping keyTypeMapping = typeMapping.getKeyTypeMapping();
-    OpenTypeMapping valueTypeMapping = typeMapping.getValueTypeMapping();
-    String[] rowAttNames = new String[] {"key", "value"};
-
-    for (Object entryObj : map.entrySet())
+    if (clazz == superClass)
     {
-      Entry entry = (Entry)entryObj;
-      Object key = entry.getKey();
-      Object value = entry.getValue();
-
-      Object mappedKey = map(key, keyTypeMapping);
-      Object mappedValue = map(value, valueTypeMapping);
-      tabularData.put(new CompositeDataSupport(rowType, rowAttNames, new Object[] {mappedKey, mappedValue}));
+      return true;
     }
-
-    return tabularData;
+    else if (clazz == Object.class)
+    {
+      return false;
+    }
+    else if (clazz.getSuperclass() == null)
+    {
+      return false;
+    }
+    else
+    {
+      return extendsClass(clazz.getSuperclass(), superClass);
+    }
   }
 
-  CompositeData mapComposite(Object obj, OpenTypeMapping typeMapping) throws OpenDataException
+  /*
+   * TODO Is there a better way to get this?
+   */
+  static int numberArrayDimensions(Class clazz)
   {
-    CompositeType type = typeMapping.getCompositeType();
-    Set<String> nameSet = type.keySet();
-
-    List<String> names = new ArrayList<String>();
-    List<Object> values = new ArrayList<Object>();
-
-    for (String name : nameSet)
+    char[] chars = clazz.getName().toCharArray();
+    int numDimensions = 0;
+    for (char chr :chars)
     {
-      try
-      {
-        BeanAttribute beanAttribute = typeMapping.getBeanAttribute(name);
-        OpenTypeMapping attributeTypeMapping = typeMapping.getAttributeMapping(name);
-
-        Object value = beanAttribute.get(obj);
-        Object mappedValue = (value == null) ? null : map(value, attributeTypeMapping);
-        names.add(name);
-        values.add(mappedValue);
-      }
-      catch (Exception exc)
-      {
-        throw new RuntimeException(exc);
-      }
+      if (chr == '[') ++numDimensions;
     }
+    return numDimensions;
+  }
 
-    return new CompositeDataSupport(type, names.toArray(new String[names.size()]), values.toArray(new Object[values.size()]));
+  static Class getArrayComponentClass(Class clazz)
+  {
+    Class componentClass = clazz.getComponentType();
+    return (componentClass.isArray()) ? getArrayComponentClass(componentClass) : componentClass;
+  }
+
+  static Type getArrayComponentType(GenericArrayType arrayType)
+  {
+    Type type = arrayType.getGenericComponentType();
+    return (type instanceof GenericArrayType) ? getArrayComponentType((GenericArrayType)type) : type;
   }
 }

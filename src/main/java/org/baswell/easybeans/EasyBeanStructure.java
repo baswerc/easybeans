@@ -9,37 +9,54 @@ import java.util.*;
 
 import static org.baswell.easybeans.SharedMethods.*;
 
-class BeanDefinition
+/*
+ * The structure of a class bean. Loads information in EasyBean and keeps track of all it's operations, attributes, and
+ * operations.
+ */
+class EasyBeanStructure
 {
   final Class clazz;
 
+  final String className;
+
+  final String objectName;
+
+  final String description;
+
+  final EasyBeanExposure exposure;
+
   final Descriptor descriptor;
 
-  final List<BeanConstructor> constructors;
+  final List<EasyBeanConstructorStructure> constructors;
 
-  final List<BeanAttribute> attributes;
+  final List<EasyBeanAttributeStructure> attributes;
 
-  final List<BeanOperation> operations;
+  final List<EasyBeanOperationStructure> operations;
 
-  BeanDefinition(Class clazz) throws InvalidEasyBeanAnnotation
+  EasyBeanStructure(Class clazz) throws InvalidEasyBeanAnnotation
   {
     this.clazz = clazz;
 
-    EasyBean mbeanAnnotation = (EasyBean)clazz.getAnnotation(EasyBean.class);
-    descriptor = (mbeanAnnotation == null) ? null : getDescriptor(clazz.getAnnotations());
+    className = clazz.getCanonicalName();
+
+    EasyBean easyBeanAnnotation = (EasyBean)clazz.getAnnotation(EasyBean.class);
+    objectName = (easyBeanAnnotation == null) ? null : easyBeanAnnotation.objectName();
+    description = (easyBeanAnnotation == null) ? null : easyBeanAnnotation.description();
+    exposure = (easyBeanAnnotation == null) ? null : easyBeanAnnotation.exposure();
+    descriptor = (easyBeanAnnotation == null) ? null : getDescriptor(clazz.getAnnotations());
 
 
     List<Constructor> publicConstructors = getPublicNonTransientConstructors(clazz);
-    List<BeanConstructor> constructors = new ArrayList<BeanConstructor>();
+    List<EasyBeanConstructorStructure> constructors = new ArrayList<EasyBeanConstructorStructure>();
     for (Constructor publicConstructor : publicConstructors)
     {
-      constructors.add(new BeanConstructor(clazz, publicConstructor));
+      constructors.add(new EasyBeanConstructorStructure(clazz, publicConstructor));
     }
     this.constructors = constructors;
 
     List<Method> allMethods = getAllMethods(clazz);
-    List<BeanOperation> operations = new ArrayList<BeanOperation>();
-    List<BeanAttribute> attributes = new ArrayList<BeanAttribute>();
+    List<EasyBeanOperationStructure> operations = new ArrayList<EasyBeanOperationStructure>();
+    List<EasyBeanAttributeStructure> attributes = new ArrayList<EasyBeanAttributeStructure>();
 
     Set<String> attributeNamesCreated = new HashSet<String>();
 
@@ -72,7 +89,7 @@ class BeanDefinition
                 }
               }
 
-              attributes.add(new BeanAttribute(clazz, method, setterMethod, getterAttName));
+              attributes.add(new EasyBeanAttributeStructure(clazz, method, setterMethod, getterAttName));
             }
           }
           else if ((operationMeta == null) && isStandardSetter(method))
@@ -91,12 +108,12 @@ class BeanDefinition
                 }
               }
 
-              attributes.add(new BeanAttribute(clazz, getterMethod, method, setterAttName));
+              attributes.add(new EasyBeanAttributeStructure(clazz, getterMethod, method, setterAttName));
             }
           }
           else
           {
-            operations.add(new BeanOperation(clazz, method));
+            operations.add(new EasyBeanOperationStructure(clazz, method));
           }
         }
         else if (method.getAnnotation(EasyBeanAttribute.class) != null)
@@ -128,7 +145,7 @@ class BeanDefinition
         {
           if (!attributeNamesCreated.contains(field.getName().toLowerCase()))
           {
-            attributes.add(new BeanAttribute(clazz, field));
+            attributes.add(new EasyBeanAttributeStructure(clazz, field));
           }
         }
         else if (field.getAnnotation(EasyBeanAttribute.class) != null)
@@ -144,52 +161,6 @@ class BeanDefinition
 
     this.attributes = Collections.unmodifiableList(attributes);
     this.operations = Collections.unmodifiableList(operations);
-  }
-
-  static boolean isStandardGetter(Method method)
-  {
-    String name = method.getName();
-    if (method.getParameterTypes().length == 0)
-    {
-      if ((name.length() > 3) && name.startsWith("get") && (method.getReturnType() != void.class))
-      {
-        return true;
-      }
-      else if ((name.length() > 2) && name.startsWith("is") && ((method.getReturnType() == boolean.class) || (method.getReturnType() == Boolean.class)))
-      {
-        return true;
-      }
-      else
-      {
-        return false;
-      }
-    }
-    else
-    {
-      return false;
-    }
-  }
-
-  static boolean isStandardSetter(Method method)
-  {
-    String name = method.getName();
-    return ((name.length() > 3) && name.startsWith("set") && (method.getReturnType() == void.class) && (method.getParameterTypes().length == 1));
-  }
-
-  static String getGetterSetterName(String methodName)
-  {
-    if ((methodName.startsWith("get") || methodName.startsWith("set")) && (methodName.length() > 3))
-    {
-      return methodName.substring(3, methodName.length());
-    }
-    else if (methodName.startsWith("is") && methodName.length() > 2)
-    {
-      return methodName.substring(2, methodName.length());
-    }
-    else
-    {
-      return methodName;
-    }
   }
 
   static List<Constructor> getPublicNonTransientConstructors(Class clazz)
@@ -208,55 +179,5 @@ class BeanDefinition
     }
 
     return publicConstructors;
-  }
-
-  static List<Field> getAllFields(Class clazz)
-  {
-    List<Field> allFields = new ArrayList<Field>();
-    Field[] fields = clazz.getDeclaredFields();
-    if (fields !=  null)
-    {
-      for (Field field : fields)
-      {
-        allFields.add(field);
-      }
-    }
-
-    Class superClass = clazz.getSuperclass();
-    if (superClass != null)
-    {
-      String declaringPackage = superClass.getPackage().getName();
-      if (!declaringPackage.startsWith("java.") && !declaringPackage.startsWith("javax."))
-      {
-        allFields.addAll(getAllFields(superClass));
-      }
-    }
-
-    return allFields;
-  }
-
-  static List<Method> getAllMethods(Class clazz)
-  {
-    List<Method> allMethods = new ArrayList<Method>();
-    Method[] methods = clazz.getDeclaredMethods();
-    if (methods != null)
-    {
-      for (Method method : methods)
-      {
-        allMethods.add(method);
-      }
-    }
-
-    Class superClass = clazz.getSuperclass();
-    if (superClass != null)
-    {
-      String declaringPackage = superClass.getPackage().getName();
-      if (!declaringPackage.startsWith("java.") && !declaringPackage.startsWith("javax."))
-      {
-        allMethods.addAll(getAllMethods(superClass));
-      }
-    }
-
-    return allMethods;
   }
 }

@@ -28,8 +28,13 @@ public enum OperationImpact
    * @see javax.management.MBeanOperationInfo#UNKNOWN
    */
   UNKNOWN;
-  
-  public int getMBeanImpact()
+
+  /*
+   * The JMX integer value of this impact.
+   *
+   * @see javax.management.MBeanOperationInfo#getImpact()
+   */
+  int getMBeanImpact()
   {
     switch (this)
     {

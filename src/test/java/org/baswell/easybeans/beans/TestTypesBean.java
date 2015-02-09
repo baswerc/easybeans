@@ -2,14 +2,15 @@ package org.baswell.easybeans.beans;
 
 import org.baswell.easybeans.EasyBean;
 import org.baswell.easybeans.EasyBeanExposure;
-import org.baswell.easybeans.EasyBeanTransient;
+import org.baswell.easybeans.EasyBeanOpenType;
+import org.baswell.easybeans.EasyBeanOpenTypeAttribute;
 
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@EasyBean(expose = EasyBeanExposure.ALL)
+@EasyBean(exposure = EasyBeanExposure.ALL)
 public class TestTypesBean
 {
   private SelfReferece selfReferece = new SelfReferece("A", 1, true, "D");
@@ -46,8 +47,10 @@ public class TestTypesBean
     return map;
   }
 
+  @EasyBeanOpenType(name="YO")
   public class SelfReferece
   {
+    @EasyBeanOpenTypeAttribute(name = "A")
     public String a;
 
     public int b;

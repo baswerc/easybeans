@@ -8,10 +8,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-abstract class BeanMember
+/*
+ * Base class for EasyBeanConstructorStructure, EasyBeanAttributeStructure, and EasyBeanOperationStructure.
+ */
+abstract class EasyBeanMemberStructure
 {
-  abstract OpenTypeMapping getTypeMapping();
-
   final Class clazz;
 
   String name;
@@ -22,7 +23,9 @@ abstract class BeanMember
 
   boolean wasAnnotated;
 
-  BeanMember(Class clazz)
+  OpenTypeMapping typeMapping;
+
+  EasyBeanMemberStructure(Class clazz)
   {
     assert clazz != null;
 

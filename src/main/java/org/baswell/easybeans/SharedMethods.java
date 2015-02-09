@@ -4,11 +4,15 @@ import javax.management.Descriptor;
 import javax.management.modelmbean.DescriptorSupport;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AccessibleObject;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+
+import static org.baswell.easybeans.Pair.*;
 
 class SharedMethods
 {
@@ -34,6 +38,12 @@ class SharedMethods
     }
   }
 
+  static Descriptor getDescriptor(Class clazz)
+  {
+    return getDescriptor(clazz.getClass().getAnnotations());
+  }
+
+
   static Descriptor getDescriptor(AccessibleObject... accessibleObjects)
   {
     List<Annotation> annotations = new ArrayList<Annotation>();
@@ -54,41 +64,47 @@ class SharedMethods
 
   static Descriptor getDescriptor(Annotation[] annotations)
   {
-    List<EasyBeanDescription> descriptions = new ArrayList<EasyBeanDescription>();
+    List<EasyBeanDescriptor> descriptors = new ArrayList<EasyBeanDescriptor>();
 
     if ((annotations != null) && (annotations.length > 0))
     {
       for (Annotation annotation : annotations)
       {
-        if (annotation instanceof EasyBeanDescription)
+        if (annotation instanceof EasyBeanDescriptor)
         {
-          descriptions.add((EasyBeanDescription) annotation);
-        }
-        else if (annotation instanceof EasyBeanDescriptions)
-        {
-          EasyBeanDescriptions mbeanDescr = (EasyBeanDescriptions) annotation;
-          for (EasyBeanDescription mbeanDesc : mbeanDescr.value())
-          {
-            descriptions.add(mbeanDesc);
-          }
+          descriptors.add((EasyBeanDescriptor) annotation);
         }
       }
     }
 
-    return getDescriptor(descriptions);
+    return getDescriptor(descriptors);
   }
 
-  static Descriptor getDescriptor(List<EasyBeanDescription> descriptions)
+  static Descriptor getDescriptor(List<EasyBeanDescriptor> descriptors)
+  {
+    List<Pair<String, Object>> descriptions = new ArrayList<Pair<String, Object>>();
+    for (EasyBeanDescriptor descriptor : descriptors)
+    {
+      int numberFields = Math.min(descriptor.names().length, descriptor.values().length);
+      for (int i = 0; i < numberFields; i++)
+      {
+        descriptions.add(pair(descriptor.names()[i], (Object)descriptor.values()[i]));
+      }
+    }
+
+    return getDescriptorFromPairs(descriptions);
+  }
+
+  static Descriptor getDescriptorFromPairs(List<Pair<String, Object>> descriptions)
   {
     if (descriptions.size() > 0)
     {
       String[] names = new String[descriptions.size()];
-      String[] values = new String[descriptions.size()];
+      Object[] values = new Object[descriptions.size()];
       for (int i = 0; i < descriptions.size(); i++)
       {
-        EasyBeanDescription easyDesc = descriptions.get(i);
-        names[i] = easyDesc.name();
-        values[i] = easyDesc.value();
+        names[i] = descriptions.get(i).x;
+        values[i] = descriptions.get(i).y;
       }
 
       return new DescriptorSupport(names, values);
@@ -97,6 +113,112 @@ class SharedMethods
     {
       return null;
     }
+  }
+
+  static boolean isSignatureGetter(Method method)
+  {
+    return (method.getParameterTypes().length == 0) && (method.getReturnType() != void.class);
+  }
+
+  static boolean isStandardGetter(Method method)
+  {
+    if (isSignatureGetter(method))
+    {
+      String name = method.getName();
+      if ((name.length() > 3) && name.startsWith("get"))
+      {
+        return true;
+      }
+      else if ((name.length() > 2) && name.startsWith("is") && ((method.getReturnType() == boolean.class)))
+      {
+        return true;
+      }
+      else
+      {
+        return false;
+      }
+    }
+    else
+    {
+      return false;
+    }
+  }
+
+  static boolean isSignatureSetter(Method method)
+  {
+    return (method.getReturnType() == void.class) && (method.getParameterTypes().length == 1);
+  }
+
+  static boolean isStandardSetter(Method method)
+  {
+    String name = method.getName();
+    return (name.length() > 3) && name.startsWith("set") && isSignatureSetter(method);
+  }
+
+  static String getGetterSetterName(String methodName)
+  {
+    if ((methodName.startsWith("get") || methodName.startsWith("set")) && (methodName.length() > 3))
+    {
+      return methodName.substring(3, methodName.length());
+    }
+    else if (methodName.startsWith("is") && methodName.length() > 2)
+    {
+      return methodName.substring(2, methodName.length());
+    }
+    else
+    {
+      return methodName;
+    }
+  }
+
+  static List<Field> getAllFields(Class clazz)
+  {
+    List<Field> allFields = new ArrayList<Field>();
+    Field[] fields = clazz.getDeclaredFields();
+    if (fields !=  null)
+    {
+      for (Field field : fields)
+      {
+        allFields.add(field);
+      }
+    }
+
+    Class superClass = clazz.getSuperclass();
+    if (superClass != null)
+    {
+      String declaringPackage = superClass.getPackage().getName();
+      if (!declaringPackage.startsWith("java.") && !declaringPackage.startsWith("javax."))
+      {
+        allFields.addAll(getAllFields(superClass));
+      }
+    }
+
+    return allFields;
+  }
+
+  static List<Method> getAllMethods(Class clazz)
+  {
+    List<Method> allMethods = new ArrayList<Method>();
+    Method[] methods = clazz.getDeclaredMethods();
+    if (methods != null)
+    {
+      for (Method method : methods)
+      {
+        allMethods.add(method);
+      }
+    }
+
+    Class superClass = clazz.getSuperclass();
+    if (superClass != null)
+    {
+      String declaringPackage = superClass.getPackage().getName();
+      if (!declaringPackage.startsWith("java.") && !declaringPackage.startsWith("javax."))
+      {
+        allMethods.addAll(getAllMethods(superClass));
+      }
+    }
+
+    return allMethods;
   }
 
   static Object mapSimpleType(String value, Class toType) throws NumberFormatException

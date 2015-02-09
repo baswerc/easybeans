@@ -4,9 +4,12 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 import static org.baswell.easybeans.SharedMethods.*;
-import static org.baswell.easybeans.OpenTypeMappingCreator.createOpenType;
+import static org.baswell.easybeans.OpenTypeMapper.*;
 
-class BeanOperation extends BeanMember
+/*
+ * The structure of an operation. Loads information in EasyBeanOperation.
+ */
+class EasyBeanOperationStructure extends EasyBeanMemberStructure
 {
   final Method method;
 
@@ -18,7 +21,7 @@ class BeanOperation extends BeanMember
 
   final String[] parameterDefaultValues;
 
-  BeanOperation(Class clazz, Method method)
+  EasyBeanOperationStructure(Class clazz, Method method)
   {
     super(clazz);
 
@@ -45,17 +48,32 @@ class BeanOperation extends BeanMember
       impact = OperationImpact.UNKNOWN;
     }
 
+    typeMapping = mapOperationToOpenType(method);
     descriptor = getDescriptor(method);
   }
 
-  @Override
-  OpenTypeMapping getTypeMapping()
+  boolean signatureMatches(String[] parameterClassNames)
   {
-    return createOpenType(new EasyBeanOpenTypeWrapper(method));
+    Class<?>[] sigClasses = method.getParameterTypes();
+    if (sigClasses.length == parameterClassNames.length)
+    {
+      for (int i = 0; i < sigClasses.length; i++)
+      {
+        if (!classesEquivalent(sigClasses[i], parameterClassNames[i]))
+        {
+          return false;
+        }
+      }
+      return true;
+    }
+    else
+    {
+      return false;
+    }
   }
 
-  void invoke(Object pojo, Object... parameters) throws IllegalAccessException, InvocationTargetException
+  Object invoke(Object pojo, Object... parameters) throws IllegalAccessException, InvocationTargetException
   {
-    method.invoke(pojo, parameters);
+    return method.invoke(pojo, parameters);
   }
 }

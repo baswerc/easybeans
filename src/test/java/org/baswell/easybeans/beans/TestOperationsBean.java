@@ -4,7 +4,7 @@ import org.baswell.easybeans.EasyBean;
 import org.baswell.easybeans.EasyBeanExposure;
 import org.baswell.easybeans.EasyBeanOperation;
 
-@EasyBean(description = "A test of operations.", expose = EasyBeanExposure.ANNOTATED)
+@EasyBean(description = "A test of operations.", exposure = EasyBeanExposure.ANNOTATED)
 public class TestOperationsBean
 {
 

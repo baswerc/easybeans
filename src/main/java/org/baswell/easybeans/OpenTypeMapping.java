@@ -1,6 +1,5 @@
 package org.baswell.easybeans;
 
-import java.lang.reflect.Method;
 import java.util.Map;
 
 import javax.management.openmbean.ArrayType;
@@ -9,6 +8,9 @@ import javax.management.openmbean.OpenType;
 import javax.management.openmbean.SimpleType;
 import javax.management.openmbean.TabularType;
 
+/*
+ * The OpenType mapping details for a Java object.
+ */
 @SuppressWarnings("unchecked")
 class OpenTypeMapping
 {
@@ -24,7 +26,7 @@ class OpenTypeMapping
   
   private OpenTypeMapping valueTypeMapping;
   
-  private Map<String, Pair<BeanAttribute, OpenTypeMapping>> attributeMappings;
+  private Map<String, Pair<EasyBeanOpenTypeStructure, OpenTypeMapping>> attributeMappings;
   
   OpenTypeMapping(OpenType nativeOpenType)
   {
@@ -51,7 +53,7 @@ class OpenTypeMapping
     this.valueTypeMapping = valueTypeMapping;
   }
 
-  OpenTypeMapping(CompositeType compositeType, Map<String, Pair<BeanAttribute, OpenTypeMapping>> attributeMappings)
+  OpenTypeMapping(CompositeType compositeType, Map<String, Pair<EasyBeanOpenTypeStructure, OpenTypeMapping>> attributeMappings)
   {
     openType = compositeType;
     this.attributeMappings = attributeMappings;
@@ -127,7 +129,7 @@ class OpenTypeMapping
     return (CompositeType)openType;
   }
 
-  BeanAttribute getBeanAttribute(String name)
+  EasyBeanOpenTypeStructure getAttributeStructure(String name)
   {
     return attributeMappings.get(name).x;
   }

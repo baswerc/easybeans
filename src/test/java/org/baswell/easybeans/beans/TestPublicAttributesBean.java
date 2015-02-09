@@ -3,7 +3,7 @@ package org.baswell.easybeans.beans;
 import org.baswell.easybeans.EasyBean;
 import org.baswell.easybeans.EasyBeanExposure;
 
-@EasyBean(expose = EasyBeanExposure.ALL)
+@EasyBean(exposure = EasyBeanExposure.ALL)
 public class TestPublicAttributesBean
 {
   public String one = "1";

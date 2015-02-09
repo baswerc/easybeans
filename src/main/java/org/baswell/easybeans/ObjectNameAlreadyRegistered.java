@@ -2,6 +2,11 @@ package org.baswell.easybeans;
 
 import javax.management.ObjectName;
 
+/**
+ * Thrown when a duplicate {@link javax.management.ObjectName} is registered.
+ *
+ * @see org.baswell.easybeans.EasyBeansRegistery#register(Object)
+ */
 public class ObjectNameAlreadyRegistered extends EasyBeanException
 {
   public final Class beanClass;

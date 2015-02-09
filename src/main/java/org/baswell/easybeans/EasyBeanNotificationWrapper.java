@@ -10,22 +10,42 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import static org.baswell.easybeans.SharedMethods.getDescriptor;
 
+/**
+ * This wrapper should be used if the wrapped bean supports JMX based notifications. To support notifications the supplied
+ * bean needs to either implement {@link org.baswell.easybeans.EasyBeansNotifierUser} or {@link javax.management.NotificationBroadcaster}
+ * or {@link javax.management.NotificationEmitter}.
+ */
 public class EasyBeanNotificationWrapper extends EasyBeanWrapper implements NotificationEmitter, EasyBeansNotifier
 {
-  List<NotificationListenerDatum> notificationListenerData;
+  private List<NotificationListenerDatum> notificationListenerData;
 
   private AtomicLong sequenceNumberGenerator;
 
-  public EasyBeanNotificationWrapper(Object pojo) throws InvalidEasyBeanNameException, InvalidEasyBeanAnnotation, InvalidEasyBeanOpenType
+  /**
+   *
+   * @param bean
+   * @throws InvalidEasyBeanNameException
+   * @throws InvalidEasyBeanAnnotation
+   * @throws InvalidEasyBeanOpenType
+   */
+  public EasyBeanNotificationWrapper(EasyBeansNotifierUser bean) throws InvalidEasyBeanNameException, InvalidEasyBeanAnnotation, InvalidEasyBeanOpenType
   {
-    super(pojo);
+    super(bean);
+    bean.setNotifier(this);
+    sequenceNumberGenerator = new AtomicLong();
+    notificationListenerData = new ArrayList<NotificationListenerDatum>();
+  }
 
-    if (pojo instanceof EasyBeansNotifierUser)
-    {
-      ((EasyBeansNotifierUser)pojo).setNotifier(this);
-      sequenceNumberGenerator = new AtomicLong();
-      notificationListenerData = new ArrayList<NotificationListenerDatum>();
-    }
+  /**
+   *
+   * @param bean
+   * @throws InvalidEasyBeanNameException
+   * @throws InvalidEasyBeanAnnotation
+   * @throws InvalidEasyBeanOpenType
+   */
+  public EasyBeanNotificationWrapper(NotificationBroadcaster bean) throws InvalidEasyBeanNameException, InvalidEasyBeanAnnotation, InvalidEasyBeanOpenType
+  {
+    super(bean);
   }
 
   @Override
