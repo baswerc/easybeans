@@ -3,6 +3,7 @@ package org.baswell.easybeans;
 import javax.management.*;
 import javax.management.openmbean.*;
 import java.lang.annotation.Annotation;
+import java.lang.management.ManagementFactory;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 
@@ -103,7 +104,77 @@ public class EasyBeanWrapper implements DynamicMBean
       throw new InvalidEasyBeanNameException(clazz, objectNameString, monexc);
     }
   }
-  
+
+  /**
+   * Registers this MBean with the platform MBeanServer
+   * 
+   * @see java.lang.management.ManagementFactory#getPlatformMBeanServer()
+   * @throws ObjectNameAlreadyRegistered If the object name of this MBean has already been registered.
+   * @throws UnexpectedEasyBeanException If the registration could not occur from some other unexpected reason.
+   */
+  public void register() throws ObjectNameAlreadyRegistered, UnexpectedEasyBeanException
+  {
+    register(ManagementFactory.getPlatformMBeanServer());
+  }
+
+  /**
+   * Registers this MBean with the given MBeanServer.
+   *
+   * @param mBeanServer The server to register this MBean with.
+   * @throws ObjectNameAlreadyRegistered If the object name of this MBean has already been registered.
+   * @throws UnexpectedEasyBeanException If the registration could not occur from some other unexpected reason.
+   */
+  public void register(MBeanServer mBeanServer) throws ObjectNameAlreadyRegistered, UnexpectedEasyBeanException
+  {
+    try
+    {
+      mBeanServer.registerMBean(this, objectName);
+    }
+    catch (InstanceAlreadyExistsException e)
+    {
+      throw new ObjectNameAlreadyRegistered(e, bean.getClass(), objectName);
+    }
+    catch (MBeanRegistrationException e)
+    {
+      throw new UnexpectedEasyBeanException(e);
+    }
+    catch (NotCompliantMBeanException e)
+    {
+      throw new UnexpectedEasyBeanException(e);
+    }
+  }
+
+  /**
+   * Unregisters this MBean from the platform MBeanServer
+   *
+   * @see java.lang.management.ManagementFactory#getPlatformMBeanServer()
+   * @throws UnexpectedEasyBeanException If the unregister action could not occur from some other unexpected reason.
+   */
+  public void unregister() throws UnexpectedEasyBeanException
+  {
+    unregister(ManagementFactory.getPlatformMBeanServer());
+  }
+
+  /**
+   * Unregisters this MBean from the given MBeanServer
+   * *
+   * @param mBeanServer The server to unregister this MBean from.
+   * @throws UnexpectedEasyBeanException If the unregister action could not occur from some other unexpected reason.
+   */
+  public void unregister(MBeanServer mBeanServer) throws UnexpectedEasyBeanException
+  {
+    try
+    {
+      mBeanServer.unregisterMBean(objectName);
+    }
+    catch (InstanceNotFoundException e)
+    {}
+    catch (MBeanRegistrationException e)
+    {
+      throw new UnexpectedEasyBeanException(e);
+    }
+  }
+
   @Override
   public Object getAttribute(String attribute) throws AttributeNotFoundException, MBeanException, ReflectionException
   {

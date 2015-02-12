@@ -13,7 +13,19 @@ import javax.management.*;
  */
 public class EasyBeansRegistery
 {
+  private final MBeanServer mBeanServer;
+  
   private Map<Object, EasyBeanWrapper> registeredBeans = new HashMap<Object, EasyBeanWrapper>();
+
+  public EasyBeansRegistery()
+  {
+    this(ManagementFactory.getPlatformMBeanServer());
+  }
+
+  public EasyBeansRegistery(MBeanServer mBeanServer)
+  {
+    this.mBeanServer = mBeanServer;
+  }
 
   /**
    * If the given bean is already an instanceof of {@link org.baswell.easybeans.EasyBeanWrapper} then the given bean
@@ -48,23 +60,8 @@ public class EasyBeansRegistery
       wrapper = new EasyBeanWrapper(bean);
     }
 
-    try
-    {
-      ManagementFactory.getPlatformMBeanServer().registerMBean(wrapper, wrapper.objectName);
-      registeredBeans.put(bean, wrapper);
-    }
-    catch (InstanceAlreadyExistsException e)
-    {
-      throw new ObjectNameAlreadyRegistered(e, bean.getClass(), wrapper.objectName);
-    }
-    catch (MBeanRegistrationException e)
-    {
-      throw new UnexpectedEasyBeanException(e);
-    }
-    catch (NotCompliantMBeanException e)
-    {
-      throw new UnexpectedEasyBeanException(e);
-    }
+    wrapper.register(mBeanServer);
+    registeredBeans.put(bean, wrapper);
   }
 
   /**
@@ -97,16 +94,7 @@ public class EasyBeansRegistery
     EasyBeanWrapper wrapper = registeredBeans.remove(bean);
     if (wrapper != null)
     {
-      try
-      {
-        ManagementFactory.getPlatformMBeanServer().unregisterMBean(wrapper.objectName);
-      }
-      catch (InstanceNotFoundException e)
-      {}
-      catch (MBeanRegistrationException e)
-      {
-        throw new UnexpectedEasyBeanException(e);
-      }
+      wrapper.unregister(mBeanServer);
     }
   }
 
@@ -116,11 +104,11 @@ public class EasyBeansRegistery
   public void unregisterAll()
   {
     MBeanServer server = ManagementFactory.getPlatformMBeanServer();
-    for (EasyBeanWrapper easyBeanWrapper : registeredBeans.values())
+    for (EasyBeanWrapper wrapper : registeredBeans.values())
     {
       try
       {
-        server.unregisterMBean(easyBeanWrapper.objectName);
+        wrapper.unregister(mBeanServer);
       }
       catch (Exception exc)
       {}
