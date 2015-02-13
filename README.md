@@ -34,5 +34,55 @@ Public methods that follow the getter setter convention will be exposed as read/
 
 ### Using EasyBeans Annotations
 
+Below is an example of Java class using EasyBeans annotations to determine how the class is exposed via. JMX:
 
+```Java
+import org.baswell.easybeans.EasyBean;
+import org.baswell.easybeans.EasyBeanAttribute;
+import org.baswell.easybeans.EasyBeanExposure;
+
+/*
+ * If objectName is not provided the object name will be created from your fully qualified class name. Implement the
+ * EasyBeanNameProvider to return a dynamic object name.
+ */
+@EasyBean(objectName = "my.custom:Name=ObjectName", description = "The description of what this MBean does.", exposure = EasyBeanExposure.ANNOTATED)
+public class YourClass
+{
+  @EasyBeanAttribute(description = "When this object was created.")
+  public final long createdAt = System.currentTimeMillis(); // This attribute will read-only since final
+
+  @EasyBeanAttribute(description = "The name", readOnly = true)
+  public String name; // This attribute will be read-only since readOnly set on annotation
+
+  @EasyBeanAttribute
+  public int readWriteAttribute;
+
+  /*
+   * This field will not be exposed as an attribute since exposure = EasyBeanExposure.ANNOTATED and there isn't an
+   * EasyBeanAttribute. If exposure = EasyBeanExposure.ANNOTATED_READ_ONLY it would be exposed as a read-only attribute.
+   * If exposure = EasyBeanExposure.ALL it would be exposed as a read-write attribute.
+   */
+  public int notExposed;
+
+  private double rate;
+
+  /*
+   *
+   *
+   */
+
+  @EasyBeanAttribute
+  public double getRate()
+  {
+    return rate;
+  }
+
+  @EasyBeanAttribute
+  public void setRate(double rate)
+  {
+    this.rate = rate;
+  }
+
+}
+```
 
