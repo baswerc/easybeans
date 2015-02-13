@@ -10,7 +10,7 @@ EasyBeans is a library that aims to make bridging your Java objects to JMX easy.
 ## Getting Started
 
 ### Direct Download
-The EasyBeans jar file can be downloaded <a href="">here</a>. EasyBeans has no external runtime dependencies.
+You can download <a href="http://baswerc.github.io/easybeans/easybeans-1.0.jar">easybeans-1.0.jar</a> directly and place in your project. EasyBeans has no external runtime dependencies.
 
 ### Using Maven
 Add the following dependency into your Maven project:
