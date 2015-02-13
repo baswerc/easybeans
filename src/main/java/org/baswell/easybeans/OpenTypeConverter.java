@@ -42,7 +42,7 @@ class OpenTypeConverter
     }
     else if (typeMapping.isTabularType())
     {
-      return convertToTable(obj, typeMapping);
+      return convertToTable((Map)obj, typeMapping);
     }
     else
     {
@@ -146,10 +146,8 @@ class OpenTypeConverter
     }
   }
 
-  static TabularData convertToTable(Object obj, OpenTypeMapping typeMapping) throws OpenDataException
+  static TabularData convertToTable(Map map, OpenTypeMapping typeMapping) throws OpenDataException
   {
-    Map map = (Map)obj;
-
     TabularType tabularType = typeMapping.getTabularType();
     CompositeType rowType = tabularType.getRowType();
 
