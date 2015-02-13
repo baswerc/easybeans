@@ -19,7 +19,7 @@ EasyBeans uses the <a href="http://docs.oracle.com/javase/7/docs/api/javax/manag
 objects accessible via. JMX. To create an MBean from your Java object and expose it via. JMX do the following:
 
 ```Java
-YourClass yourObject = new YourClass();
+org.baswell.easybeans.examples.YourClass yourObject = new org.baswell.easybeans.examples.YourClass();
 EasyBeanWrapper wrapper = new EasyBeanWrapper(yourObject);
 wrapper.register();
 ```
@@ -28,8 +28,8 @@ Now your object is exposed via. JMX. To unregister your object call:
 ```Java
 wrapper.unregister();
 ```
-If `YourClass` uses no EasyBean annotations then only public fields and public methods will be exposed. This includes public fields and public methods from all ancestor classes
-`YourClass` extends from (all the way up the hierarchy chain until a Class that is the `java.` or `javax.` package is reached). Public fields will be exposed as read/write attributes.
+If `org.baswell.easybeans.examples.YourClass` uses no EasyBean annotations then only public fields and public methods will be exposed. This includes public fields and public methods from all ancestor classes
+`org.baswell.easybeans.examples.YourClass` extends from (all the way up the hierarchy chain until a Class that is the `java.` or `javax.` package is reached). Public fields will be exposed as read/write attributes.
 Public methods that follow the getter setter convention will be exposed as read/write attributes. All other public methods will be exposed as operations.
 
 ### Using EasyBeans Annotations
@@ -50,7 +50,7 @@ import org.baswell.easybeans.OperationImpact;
 @EasyBean(objectName = "my.custom:Name=ObjectName",
           description = "The description of what this MBean does.",
           exposure = EasyBeanExposure.ANNOTATED)
-public class YourClass
+public class org.baswell.easybeans.examples.YourClass
 {
   // This attribute will read-only since final
   @EasyBeanAttribute(description = "When this object was created.")
@@ -64,10 +64,11 @@ public class YourClass
   public int readWriteAttribute;
 
   /*
-   * This field will not be exposed as an attribute since exposure = EasyBeanExposure.ANNOTATED
-   * and there isn't an EasyBeanAttribute. If exposure = EasyBeanExposure.ANNOTATED_READ_ONLY
-   * it would be exposed as a read-only attribute. If exposure = EasyBeanExposure.ALL it would
-   * be exposed as a read-write attribute.
+   * This field will not be exposed as an attribute since exposure =
+   * EasyBeanExposure.ANNOTATED and there isn't an EasyBeanAttribute. If
+   * exposure = EasyBeanExposure.ANNOTATED_READ_ONLY it would be exposed as a read-only
+   * attribute. If exposure = EasyBeanExposure.ALL it would be exposed as a read-write
+   * attribute.
    */
   public int notExposed;
 
@@ -111,3 +112,85 @@ public class YourClass
 }
 ```
 
+### Marking Members Transient
+
+The annotation `EasyBeanTransient` can be used on any class members to make sure that member isn't exposed via. JMX.
+If this annotation is present on a class member no other EasyBean annotation can be used in conjunction.
+
+
+### Converting Objects To Open Types
+
+The JMX API addresses the question of complex data types with Open MBeans. Open MBeans use open types such as
+<a href="http://docs.oracle.com/javase/7/docs/api/javax/management/openmbean/ArrayType.html">ArrayType</a>,
+<a href="http://docs.oracle.com/javase/7/docs/api/javax/management/openmbean/CompositeType.html">CompositeType</a>,
+<a href="http://docs.oracle.com/javase/7/docs/api/javax/management/openmbean/TabularType.html">TabularType</a>, and
+<a href="http://docs.oracle.com/javase/7/docs/api/javax/management/openmbean/SimpleType.html">SimpleType</a> to pass
+information to and from JMX clients. EasyBeans converts Java objects returned by attributes and operations in a MBean
+into one of of these open types so it can be consumeable by a JMX client. For example if your MBean class looks like:
+
+````Java
+package org.baswell.easybeans.examples;
+
+import org.baswell.easybeans.EasyBean;
+import org.baswell.easybeans.EasyBeanExposure;
+
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+@EasyBean(exposure = EasyBeanExposure.ALL)
+public class OpenTypeExample
+{
+  public List<String> getNames()
+  {
+    return Arrays.asList("One", "Two", "Three");
+  }
+
+  public Map<String, List<Integer>>  getNumbers()
+  {
+    Map<String, List<Integer>> numbers = new HashMap<String, List<Integer>>();
+    numbers.put("A", Arrays.asList(1, 2, 3, 5));
+    numbers.put("B", Arrays.asList(6, 7, 8, 9));
+    numbers.put("C", Arrays.asList(10));
+    return numbers;
+  }
+
+  public Address getAddress()
+  {
+    return new Address("Mulch lane", null, "Anytown", "NY", "12345");
+  }
+
+  public class Address
+  {
+    public String street1;
+
+    public String street2;
+
+    public String city;
+
+    public String state;
+
+    public String zip;
+
+    public Address(String street1, String street2, String city, String state, String zip)
+    {
+      this.street1 = street1;
+      this.street2 = street2;
+      this.city = city;
+      this.state = state;
+      this.zip = zip;
+    }
+  }
+}
+````
+
+EasyBeans will convert `List<String>` to `ArrayType<SimpleType<String>>` and `Map<String, List<Integer>>` will be converted
+to a `TabularType`. The custom `Address` class will be converted to a `CompositeType` that contains five `SimpleType<String>'
+items (street1, street2, city, state and zip).
+
+
+### EasyBean Open Type Annotations
+
+
+### EasyBeans Notifications
