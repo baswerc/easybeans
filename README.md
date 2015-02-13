@@ -19,7 +19,7 @@ EasyBeans uses the <a href="http://docs.oracle.com/javase/7/docs/api/javax/manag
 objects accessible via. JMX. To create an MBean from your Java object and expose it via. JMX do the following:
 
 ```Java
-org.baswell.easybeans.examples.YourClass yourObject = new org.baswell.easybeans.examples.YourClass();
+YourClass yourObject = new YourClass();
 EasyBeanWrapper wrapper = new EasyBeanWrapper(yourObject);
 wrapper.register();
 ```
@@ -32,7 +32,7 @@ If `org.baswell.easybeans.examples.YourClass` uses no EasyBean annotations then 
 `org.baswell.easybeans.examples.YourClass` extends from (all the way up the hierarchy chain until a Class that is the `java.` or `javax.` package is reached). Public fields will be exposed as read/write attributes.
 Public methods that follow the getter setter convention will be exposed as read/write attributes. All other public methods will be exposed as operations.
 
-### Using EasyBeans Annotations
+### Using Annotations
 
 Below is an example of Java class using EasyBeans annotations to determine how the class is exposed via. JMX:
 
@@ -129,8 +129,6 @@ information to and from JMX clients. EasyBeans converts Java objects returned by
 into one of of these open types so it can be consumeable by a JMX client. For example if your MBean class looks like:
 
 ````Java
-package org.baswell.easybeans.examples;
-
 import org.baswell.easybeans.EasyBean;
 import org.baswell.easybeans.EasyBeanExposure;
 
@@ -186,11 +184,47 @@ public class OpenTypeExample
 ````
 
 EasyBeans will convert `List<String>` to `ArrayType<SimpleType<String>>` and `Map<String, List<Integer>>` will be converted
-to a `TabularType`. The custom `Address` class will be converted to a `CompositeType` that contains five `SimpleType<String>'
+to a `TabularType`. The custom `Address` class will be converted to a `CompositeType` that contains five `SimpleType<String>`
 items (street1, street2, city, state and zip).
 
+### Annotations for OpenType
 
-### EasyBean Open Type Annotations
+EasyBeans provides annotations for customizing how normal objects are converted to open types:
+
+````Java
+import org.baswell.easybeans.EasyBeanOpenType;
+import org.baswell.easybeans.EasyBeanOpenTypeAttribute;
+import org.baswell.easybeans.EasyBeanTransient;
+
+@EasyBeanOpenType(description = "A street address", exposure = EasyBeanOpenTypeExposure.ALL)
+public class Address
+{
+  @EasyBeanOpenTypeAttribute(name = "street")
+  public String street1;
+
+  @EasyBeanTransient
+  public String street2;
+
+  public String city;
+
+  public String state;
+
+  public String zip;
+
+  public Address(String street1, String street2, String city, String state, String zip)
+  {
+    this.street1 = street1;
+    this.street2 = street2;
+    this.city = city;
+    this.state = state;
+    this.zip = zip;
+  }
+}
+````
+In the example above all of the public fields of `Address` will added as items to the returned `CompositeType`. The exception
+to this is the stree2 field since it's marked with the `EasyBeanTransient` annotation and will not be returned. The name of
+the street1 attribute will be street since it was overriden using the `EasyBeanOpenTypeAttributeName` annoation.
 
 
-### EasyBeans Notifications
+
+### Notifications
