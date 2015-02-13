@@ -23,7 +23,7 @@ public @interface EasyBeanOpenType
   String description() default "";
 
   /**
-   * If true this the toString method of this annotated Object will be used for it's JMX representation.
+   * If true the toString method of this annotated object will be used for it's JMX representation (SimpleType<String>).
    */
   boolean exposeAsString() default false;
 
