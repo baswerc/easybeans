@@ -226,5 +226,21 @@ to this is the stree2 field since it's marked with the `EasyBeanTransient` annot
 the street1 attribute will be street since it was overriden using the `EasyBeanOpenTypeAttributeName` annoation.
 
 
-
 ### Notifications
+
+If you want to emit JMX notifications you should wrap your object in an `EasyBeanNotificationWrapper` and implement either
+the standard JMX notification interfaces (<a href="http://docs.oracle.com/javase/7/docs/api/javax/management/NotificationBroadcaster.html">NotificationBroadcaster</a>
+or <a href="http://docs.oracle.com/javase/7/docs/api/javax/management/NotificationEmitter.html">NotificationEmitter</a>) or the
+EasyBeans notification interface:
+
+````Java
+package org.baswell.easybeans;
+
+public interface EasyBeansNotifierUser
+{
+  void setNotifier(EasyBeansNotifier easyBeansNotifier);
+}
+````
+When your object receives the `EasyBeanNotifier` it should store it and then call one of its notify methods anytime you want
+to send out a notification. If you want to describe the type of notifications that your object will be sending out you can
+use the `EasyBeanNotification' annotation to do so.
