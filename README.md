@@ -1,6 +1,6 @@
 # EasyBeans
 
-The EasyBeans library aims to make bridging your Java objects to JMX easy. It provides the following functionality:
+EasyBeans is a library aims to make bridging your Java objects to JMX easy. It provides the following functionality:
 
 * A wrapper to turn your Java objects into Dynamic MBeans. The functionality of the MBean can be specified with EasyBean annotations are through a convention based approach.
 * A Java object to <a href="http://docs.oracle.com/javase/7/docs/api/javax/management/openmbean/OpenType.html">OpenType</a> converter to make complex objects your object exposes (through attributes or operations) consumable by JMX clients.
@@ -18,9 +18,9 @@ The EasyBeans library aims to make bridging your Java objects to JMX easy. It pr
 EasyBeans uses the <a href="http://docs.oracle.com/javase/7/docs/api/javax/management/DynamicMBean.html">DynamicMBean</a> API to make Java
 objects accessible via. JMX. To create an MBean from your Java object and expose it via. JMX do the following:
 
-```java
-YourClass yourClass = new YourClass();
-EasyBeanWrapper wrapper = new EasyBeanWrapper(yourClass);
+```Java
+YourClass yourObject = new YourClass();
+EasyBeanWrapper wrapper = new EasyBeanWrapper(yourObject);
 wrapper.register();
 ```
 
