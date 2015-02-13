@@ -9,9 +9,19 @@ EasyBeans is a library aims to make bridging your Java objects to JMX easy. It p
 
 ## Getting Started
 
-### Using Gradle
+### Direct Download
+The EasyBeans jar file can be downloaded here.
 
 ### Using Maven
+Add the following dependency into your Maven project:
+
+````Maven
+<dependency>
+    <groupId>org.baswell</groupId>
+    <artifactId>easybeans</artifactId>
+    <version>1.0</version>
+</dependency>
+````
 
 ## How to use
 
@@ -187,7 +197,7 @@ EasyBeans will convert `List<String>` to `ArrayType<SimpleType<String>>` and `Ma
 to a `TabularType`. The custom `Address` class will be converted to a `CompositeType` that contains five `SimpleType<String>`
 items (street1, street2, city, state and zip).
 
-### Annotations for OpenType
+#### Annotations for OpenType
 
 EasyBeans provides annotations for customizing how normal objects are converted to open types:
 
@@ -243,4 +253,13 @@ public interface EasyBeansNotifierUser
 ````
 When your object receives the `EasyBeanNotifier` it should store it and then call one of its notify methods anytime you want
 to send out a notification. If you want to describe the type of notifications that your object will be sending out you can
-use the `EasyBeanNotification' annotation to do so.
+use the `EasyBeanNotification` annotation to do so.
+
+### EasyBeans Registry
+
+The `EasyBeansRegistry` can be used to take care of wrapping your objects in the correct EasyBean wrapper (either `EasyBeanWrapper`
+or `EasyBeanNotification`) and to keep track of the wrapper MBean when it comes time to unregister them. The EasyBean registry
+is not required it's simple a convenience class for some of the bookkeeping.
+
+# License
+EasyBeans is available under <a href="https://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>
