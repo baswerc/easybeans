@@ -138,7 +138,7 @@ class EasyBeanStructure
     List<Field> allFields = getAllFields(clazz);
     for (Field field : allFields)
     {
-      if (Modifier.isPublic(field.getModifiers()))
+      if (Modifier.isPublic(field.getModifiers()) && !Modifier.isStatic(field.getModifiers()))
       {
         EasyBeanTransient transientAnnotation = field.getAnnotation(EasyBeanTransient.class);
         if (transientAnnotation == null)
