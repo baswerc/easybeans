@@ -1,6 +1,6 @@
 # EasyBeans
 
-EasyBeans is a library aims to make bridging your Java objects to JMX easy. It provides the following functionality:
+EasyBeans is a library that aims to make bridging your Java objects to JMX easy. It provides the following functionality:
 
 * A wrapper to turn your Java objects into Dynamic MBeans. The functionality of the MBean can be specified with EasyBean annotations are through a convention based approach.
 * A Java object to <a href="http://docs.oracle.com/javase/7/docs/api/javax/management/openmbean/OpenType.html">OpenType</a> converter to make complex objects your object exposes (through attributes or operations) consumable by JMX clients.
@@ -38,7 +38,7 @@ Now your object is exposed via. JMX. To unregister your object call:
 ```Java
 wrapper.unregister();
 ```
-If `org.baswell.easybeans.examples.YourClass` uses no EasyBean annotations then only public fields and public methods will be exposed. This includes public fields and public methods from all ancestor classes
+If `org.baswell.easybeans.examples.YourClass` uses no EasyBeans annotations then only public fields and public methods will be exposed. This includes public fields and public methods from all ancestor classes
 `org.baswell.easybeans.examples.YourClass` extends from (all the way up the hierarchy chain until a Class that is the `java.` or `javax.` package is reached). Public fields will be exposed as read/write attributes.
 Public methods that follow the getter setter convention will be exposed as read/write attributes. All other public methods will be exposed as operations.
 
@@ -261,5 +261,27 @@ The `EasyBeansRegistry` can be used to take care of wrapping your objects in the
 or `EasyBeanNotification`) and to keep track of the wrapper MBean when it comes time to unregister them. The EasyBean registry
 is not required it's simple a convenience class for some of the bookkeeping.
 
+# Additional Documentation
+
+* <a href="http://baswerc.github.io/easybeans/javadoc/">Javadoc</a>
+
+# Developed By
+
+Corey Baswell - <a href="mailto:corey.baswell@gmail.com">corey.baswell@gmail.com</a>
+
 # License
-EasyBeans is available under <a href="https://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>
+````
+Copyright 2015 Corey Baswell
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+   http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+````
