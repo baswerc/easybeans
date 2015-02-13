@@ -16,8 +16,6 @@ class OpenTypeMapping
 {
   private OpenType openType;
 
-  private boolean nativeType;
-  
   private Class simpleClass;
   
   private OpenTypeMapping elementTypeMapping;
@@ -28,12 +26,6 @@ class OpenTypeMapping
   
   private Map<String, Pair<EasyBeanOpenTypeStructure, OpenTypeMapping>> attributeMappings;
   
-  OpenTypeMapping(OpenType nativeOpenType)
-  {
-    this.openType = nativeOpenType;
-    nativeType = true;
-  }
-
   OpenTypeMapping(SimpleType simpleType, Class simpleClass)
   {
     this.openType = simpleType;
@@ -64,11 +56,6 @@ class OpenTypeMapping
     return openType;
   }
   
-  boolean isNativeType()
-  {
-    return nativeType;
-  }
-
   boolean isSimpleType()
   {
     return (openType instanceof SimpleType);
