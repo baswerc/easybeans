@@ -15,7 +15,7 @@ The EasyBeans jar file can be downloaded here.
 ### Using Maven
 Add the following dependency into your Maven project:
 
-````Maven
+````xml
 <dependency>
     <groupId>org.baswell</groupId>
     <artifactId>easybeans</artifactId>
