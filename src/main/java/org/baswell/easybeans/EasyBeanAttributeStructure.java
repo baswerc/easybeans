@@ -3,6 +3,7 @@ package org.baswell.easybeans;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 
 import static org.baswell.easybeans.OpenTypeMapper.mapAttributeToOpenType;
 import static org.baswell.easybeans.OpenTypeMapper.mapToOpenType;
@@ -111,7 +112,14 @@ class EasyBeanAttributeStructure extends EasyBeanMemberStructure
 
   boolean hasWriteAccess()
   {
-    return (field != null) || (setter != null);
+    if (field != null)
+    {
+      return !Modifier.isFinal(field.getModifiers());
+    }
+    else
+    {
+      return setter != null;
+    }
   }
 
   Object get(Object pojo) throws IllegalAccessException, InvocationTargetException
