@@ -25,6 +25,8 @@ class EasyBeanAttributeStructure extends EasyBeanMemberStructure
 
   private final Method setter;
 
+  private final boolean writeable;
+
   EasyBeanAttributeStructure(Class clazz, Field field)
   {
     super(clazz);
@@ -51,6 +53,20 @@ class EasyBeanAttributeStructure extends EasyBeanMemberStructure
 
     typeMapping = mapToOpenType(field);
     descriptor = getDescriptor(field);
+
+    if (Modifier.isFinal(field.getModifiers()))
+    {
+      writeable = false;
+    }
+    else if (attMeta != null)
+    {
+      writeable = !attMeta.readOnly();
+    }
+    else
+    {
+      writeable = true;
+    }
+
   }
 
   EasyBeanAttributeStructure(Class clazz, Method getter, Method setter, String getterSetterName)
@@ -98,6 +114,17 @@ class EasyBeanAttributeStructure extends EasyBeanMemberStructure
     field = null;
     typeMapping = mapAttributeToOpenType(getter != null ? getter : setter);
     descriptor = getDescriptor(getter, setter);
+
+    if (setter == null)
+    {
+      writeable = false;
+    }
+    else
+    {
+      boolean readOnly = getterMeta != null && getterMeta.readOnly();
+      readOnly = readOnly || (setterMeta != null && setterMeta.readOnly());
+      writeable = !readOnly;
+    }
   }
 
   boolean isIs()
@@ -112,14 +139,7 @@ class EasyBeanAttributeStructure extends EasyBeanMemberStructure
 
   boolean hasWriteAccess()
   {
-    if (field != null)
-    {
-      return !Modifier.isFinal(field.getModifiers());
-    }
-    else
-    {
-      return setter != null;
-    }
+    return writeable;
   }
 
   Object get(Object pojo) throws IllegalAccessException, InvocationTargetException

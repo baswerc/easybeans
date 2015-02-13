@@ -27,4 +27,9 @@ public @interface EasyBeanAttribute
    * @see javax.management.openmbean.OpenMBeanAttributeInfo#getDescription()
    */
   String description() default "";
+
+  /**
+   * Forces this attribute to be read-only even if the field or setter is available to write to.
+   */
+  boolean readOnly() default false;
 }
