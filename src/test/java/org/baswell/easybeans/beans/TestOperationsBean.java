@@ -20,4 +20,8 @@ public class TestOperationsBean
     }
     return builder.toString();
   }
+
+  @EasyBeanOperation(parameterNames="password", parameterDescriptions="The password.")
+  public void stop(String password)
+  {}
 }
