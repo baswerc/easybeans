@@ -528,7 +528,7 @@ public class EasyBeanWrapper implements DynamicMBean
           descriptorPairs.add(Pair.pair("defaultValue", mapSimpleType(defaultValueString, simpleClass)));
         }
       }
-      else
+      else if (defaultValueString != null)
       {
         throw new InvalidEasyBeanAnnotation(beanClass, "Default value " + defaultValueString + " for parameter " + paramTypes[i].getSimpleName() + " must be a simple type.");
       }
