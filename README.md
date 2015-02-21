@@ -19,7 +19,7 @@ Add the following dependency into your Maven project:
 <dependency>
     <groupId>org.baswell</groupId>
     <artifactId>easybeans</artifactId>
-    <version>1.1</version>
+    <version>1.2</version>
 </dependency>
 ````
 
