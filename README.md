@@ -60,7 +60,7 @@ import org.baswell.easybeans.OperationImpact;
 @EasyBean(objectName = "my.custom:Name=ObjectName",
           description = "The description of what this MBean does.",
           exposure = EasyBeanExposure.ANNOTATED)
-public class org.baswell.easybeans.examples.YourClass
+public class YourClass
 {
   // This attribute will read-only since final
   @EasyBeanAttribute(description = "When this object was created.")
