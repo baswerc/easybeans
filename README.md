@@ -38,8 +38,8 @@ Now your object is exposed via. JMX. To unregister your object call:
 ```Java
 wrapper.unregister();
 ```
-If `org.baswell.easybeans.examples.YourClass` uses no EasyBeans annotations then only public fields and public methods will be exposed. This includes public fields and public methods from all ancestor classes
-`org.baswell.easybeans.examples.YourClass` extends from (all the way up the hierarchy chain until a Class that is the `java.` or `javax.` package is reached). Public fields will be exposed as read/write attributes.
+If `YourClass` uses no EasyBeans annotations then only public fields and public methods will be exposed. This includes public fields and public methods from all ancestor classes
+`YourClass` extends from (all the way up the hierarchy chain until a Class that is the `java.` or `javax.` package is reached). Public fields will be exposed as read/write attributes.
 Public methods that follow the getter setter convention will be exposed as read/write attributes. All other public methods will be exposed as operations.
 
 ### Using Annotations
