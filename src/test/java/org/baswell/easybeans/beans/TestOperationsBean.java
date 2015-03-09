@@ -21,7 +21,7 @@ public class TestOperationsBean
     return builder.toString();
   }
 
-  @EasyBeanOperation(parameterNames="password", parameterDescriptions="The password.")
+  @EasyBeanOperation(parameterNames = "password")
   public void stop(String password)
   {}
 }

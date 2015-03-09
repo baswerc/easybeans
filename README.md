@@ -2,7 +2,7 @@
 
 EasyBeans is a library that aims to make bridging your Java objects to JMX easy. It provides the following functionality:
 
-* A wrapper to turn your Java objects into Dynamic MBeans. The functionality of the MBean can be specified with EasyBean annotations are through a convention based approach.
+* A wrapper to turn your Java objects into Dynamic MBeans. The functionality of the MBean can be specified with EasyBean annotations or through a convention based approach.
 * A Java object to <a href="http://docs.oracle.com/javase/7/docs/api/javax/management/openmbean/OpenType.html">OpenType</a> converter to make complex objects your object exposes (through attributes or operations) consumable by JMX clients.
 * A simplified mechanism for emitting JMX notifications.
 * A centralized EasyBean repository for registering and unregistering your Java objects to a MBeanServer.
@@ -10,7 +10,7 @@ EasyBeans is a library that aims to make bridging your Java objects to JMX easy.
 ## Getting Started
 
 ### Direct Download
-You can download <a href="https://github.com/baswerc/easybeans/releases/download/1.0/easybeans-1.0.jar">easybeans-1.0.jar</a> directly and place in your project. EasyBeans has no external runtime dependencies.
+You can download <a href="https://github.com/baswerc/easybeans/releases/download/1.2/easybeans-1.2.jar">easybeans-1.2.jar</a> directly and place in your project. EasyBeans has no external runtime dependencies.
 
 ### Using Maven
 Add the following dependency into your Maven project:
@@ -19,7 +19,7 @@ Add the following dependency into your Maven project:
 <dependency>
     <groupId>org.baswell</groupId>
     <artifactId>easybeans</artifactId>
-    <version>1.0.0</version>
+    <version>1.2</version>
 </dependency>
 ````
 
@@ -38,8 +38,8 @@ Now your object is exposed via. JMX. To unregister your object call:
 ```Java
 wrapper.unregister();
 ```
-If `org.baswell.easybeans.examples.YourClass` uses no EasyBeans annotations then only public fields and public methods will be exposed. This includes public fields and public methods from all ancestor classes
-`org.baswell.easybeans.examples.YourClass` extends from (all the way up the hierarchy chain until a Class that is the `java.` or `javax.` package is reached). Public fields will be exposed as read/write attributes.
+If `YourClass` uses no EasyBeans annotations then only public fields and public methods will be exposed. This includes public fields and public methods from all ancestor classes
+`YourClass` extends from (all the way up the hierarchy chain until a Class that is the `java.` or `javax.` package is reached). Public fields will be exposed as read/write attributes.
 Public methods that follow the getter setter convention will be exposed as read/write attributes. All other public methods will be exposed as operations.
 
 ### Using Annotations
@@ -60,7 +60,7 @@ import org.baswell.easybeans.OperationImpact;
 @EasyBean(objectName = "my.custom:Name=ObjectName",
           description = "The description of what this MBean does.",
           exposure = EasyBeanExposure.ANNOTATED)
-public class org.baswell.easybeans.examples.YourClass
+public class YourClass
 {
   // This attribute will read-only since final
   @EasyBeanAttribute(description = "When this object was created.")
