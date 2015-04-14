@@ -90,6 +90,22 @@ public class EasyBeansRegistery
    * @throws UnexpectedEasyBeanException If something unexpected occurred.
    * @see #register(Object)
    */
+  public void setBeans(List beans) throws InvalidEasyBeanNameException, InvalidEasyBeanAnnotation, InvalidEasyBeanOpenType, ObjectNameAlreadyRegistered, UnexpectedEasyBeanException
+  {
+    register(beans);
+  }
+
+  /**
+   * Registers each of the given beans.
+   *
+   * @param beans
+   * @throws InvalidEasyBeanNameException If the ObjectName used for this bean in invalid.
+   * @throws InvalidEasyBeanAnnotation If an EasyBean annotation is used incorrectly.
+   * @throws InvalidEasyBeanOpenType If the given object (or a descendant of this object) cannot be mapped to an OpenType.
+   * @throws ObjectNameAlreadyRegistered If the object name used for this bean is already registered.
+   * @throws UnexpectedEasyBeanException If something unexpected occurred.
+   * @see #register(Object)
+   */
   public void register(List beans) throws InvalidEasyBeanNameException, InvalidEasyBeanAnnotation, InvalidEasyBeanOpenType, ObjectNameAlreadyRegistered, UnexpectedEasyBeanException
   {
     for (Object bean : beans)
