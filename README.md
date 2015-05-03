@@ -1,6 +1,6 @@
 # EasyBeans
 
-EasyBeans is a library that aims to make bridging your Java objects to JMX easy. It provides the following functionality:
+EasyBeans is a library that makes managing your Java objects via. JMX easy. It provides the following functionality:
 
 * A wrapper to turn your Java objects into Dynamic MBeans. The functionality of the MBean can be specified with EasyBean annotations or through a convention based approach.
 * A Java object to <a href="http://docs.oracle.com/javase/7/docs/api/javax/management/openmbean/OpenType.html">OpenType</a> converter to make complex objects your object exposes (through attributes or operations) consumable by JMX clients.
@@ -10,7 +10,7 @@ EasyBeans is a library that aims to make bridging your Java objects to JMX easy.
 ## Getting Started
 
 ### Direct Download
-You can download <a href="https://github.com/baswerc/easybeans/releases/download/1.2/easybeans-1.2.jar">easybeans-1.2.jar</a> directly and place in your project. EasyBeans has no external runtime dependencies.
+You can download <a href="https://github.com/baswerc/easybeans/releases/download/1.3/easybeans-1.3.jar">easybeans-1.2.jar</a> directly and place in your project. EasyBeans has no external runtime dependencies.
 
 ### Using Maven
 Add the following dependency into your Maven project:
@@ -19,11 +19,11 @@ Add the following dependency into your Maven project:
 <dependency>
     <groupId>org.baswell</groupId>
     <artifactId>easybeans</artifactId>
-    <version>1.2</version>
+    <version>1.3</version>
 </dependency>
 ````
 
-## How to use
+## How To Use
 
 EasyBeans uses the <a href="http://docs.oracle.com/javase/7/docs/api/javax/management/DynamicMBean.html">DynamicMBean</a> API to make Java
 objects accessible via. JMX. To create an MBean from your Java object and expose it via. JMX do the following:
@@ -39,7 +39,7 @@ Now your object is exposed via. JMX. To unregister your object call:
 wrapper.unregister();
 ```
 If `YourClass` uses no EasyBeans annotations then only public fields and public methods will be exposed. This includes public fields and public methods from all ancestor classes
-`YourClass` extends from (all the way up the hierarchy chain until a Class that is the `java.` or `javax.` package is reached). Public fields will be exposed as read/write attributes.
+`YourClass` extends from (all the way up the hierarchy chain until a Class that is in the `java.` or `javax.` package is reached). Public fields will be exposed as read/write attributes.
 Public methods that follow the getter setter convention will be exposed as read/write attributes. All other public methods will be exposed as operations.
 
 ### Using Annotations
@@ -260,6 +260,22 @@ use the `EasyBeanNotification` annotation to do so.
 The `EasyBeansRegistry` can be used to take care of wrapping your objects in the correct EasyBean wrapper (either `EasyBeanWrapper`
 or `EasyBeanNotification`) and to keep track of the wrapper MBean when it comes time to unregister them. The EasyBean registry
 is not required it's simple a convenience class for some of the bookkeeping.
+
+### Spring Configration
+You can expose your Spring beans via. JMX by using `EasyBeansRegistry.setBeans` method. Be sure to configure the `unregisterAll` method when the Spring application
+context is shutdown to unregister all your beans from JMX.
+
+````xml
+<bean id="easyBeanServerRegistry" class="org.baswell.easybeans.EasyBeansRegistery" destroy-method="unregisterAll">
+  <property name="beans">
+    <list>
+      <ref bean="beanOneId"/>
+      <ref bean="beanTwoId"/>
+      <ref bean="beanThreeId"/>
+    </list>
+  </property>
+</bean>
+````
 
 # Additional Documentation
 
