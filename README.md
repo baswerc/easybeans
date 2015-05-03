@@ -266,7 +266,8 @@ You can expose your Spring beans via. JMX by using `EasyBeansRegistry.setBeans` 
 context is shutdown to unregister all your beans from JMX.
 
 ````xml
-<bean id="easyBeanServerRegistry" class="org.baswell.easybeans.EasyBeansRegistery" destroy-method="unregisterAll">
+<bean id="easyBeanServerRegistry" class="org.baswell.easybeans.EasyBeansRegistery"
+destroy-method="unregisterAll">
   <property name="beans">
     <list>
       <ref bean="beanOneId"/>
