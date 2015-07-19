@@ -263,7 +263,7 @@ or `EasyBeanNotification`) and to keep track of the wrapper MBean when it comes 
 ````Java
 EasyBeansRegistry easyBeansRegistry = new EasyBeansRegistry();
 easyBeansRegistry.regiser(bean1);
-easyBeansRegistry.register(new ObjectName(""), bean2);
+easyBeansRegistry.register(new ObjectName("this.is.a:name=TEST"), bean2);
 
 // Beans accessible via. JMX
 
