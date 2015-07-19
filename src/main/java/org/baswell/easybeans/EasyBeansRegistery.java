@@ -56,7 +56,7 @@ public class EasyBeansRegistery
    */
   public void register(Object bean) throws InvalidEasyBeanNameException, InvalidEasyBeanAnnotation, InvalidEasyBeanOpenType, ObjectNameAlreadyRegistered, UnexpectedEasyBeanException
   {
-    register(bean, null);
+    register(null, bean);
   }
 
     /**
@@ -64,15 +64,15 @@ public class EasyBeansRegistery
      * will be registered directly with the MBean server. Otherwise the object will be wrapped with either {@link org.baswell.easybeans.EasyBeanNotificationWrapper}
      * (if the bean implements {@link EasyBeansNotifierUser} or {@link NotificationBroadcaster}) or a {@link org.baswell.easybeans.EasyBeanWrapper}.
      *
-     * @param bean The bean to register.
      * @param objectName The object name to register this bean with. If {@code null} the object name from {@link EasyBeanNameProvider}, {@link EasyBean#objectName()} or from the bean's class name will be used.
+     * @param bean The bean to register.
      * @throws InvalidEasyBeanNameException If the ObjectName used for this bean in invalid.
      * @throws InvalidEasyBeanAnnotation If an EasyBean annotation is used incorrectly.
      * @throws InvalidEasyBeanOpenType If the given object (or a descendant of this object) cannot be mapped to an OpenType.
      * @throws ObjectNameAlreadyRegistered If the object name used for this bean is already registered.
      * @throws UnexpectedEasyBeanException If something unexpected occurred.
      */
-  public void register(Object bean, ObjectName objectName) throws InvalidEasyBeanNameException, InvalidEasyBeanAnnotation, InvalidEasyBeanOpenType, ObjectNameAlreadyRegistered, UnexpectedEasyBeanException
+  public void register(ObjectName objectName, Object bean) throws InvalidEasyBeanNameException, InvalidEasyBeanAnnotation, InvalidEasyBeanOpenType, ObjectNameAlreadyRegistered, UnexpectedEasyBeanException
   {
     EasyBeanWrapper wrapper;
 

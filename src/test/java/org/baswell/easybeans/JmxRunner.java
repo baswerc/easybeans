@@ -17,7 +17,7 @@ public class JmxRunner
     registry.register(new TestTypesBean());
     registry.register(new TestNotificationsBean());
     registry.register(new TestOperationsBean());
-    registry.register(new TestOperationsBean(), new ObjectName("this.is.a:name=TEST"));
+    registry.register(new ObjectName("this.is.a:name=TEST"), new TestOperationsBean());
 
     synchronized (JmxRunner.class)
     {
