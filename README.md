@@ -269,7 +269,6 @@ easyBeansRegistry.register(new ObjectName(""), bean2);
 
 ...
 
-
 easyBeansRegistry.unregisterAll(); // Removes JMX access to beans
 ````
 
