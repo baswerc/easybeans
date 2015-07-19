@@ -258,8 +258,20 @@ use the `EasyBeanNotification` annotation to do so.
 ### EasyBeans Registry
 
 The `EasyBeansRegistry` can be used to take care of wrapping your objects in the correct EasyBean wrapper (either `EasyBeanWrapper`
-or `EasyBeanNotification`) and to keep track of the wrapper MBean when it comes time to unregister them. The EasyBean registry
-is not required it's simple a convenience class for some of the bookkeeping.
+or `EasyBeanNotification`) and to keep track of the wrapper MBean when it comes time to unregister them. 
+
+````Java
+EasyBeansRegistry easyBeansRegistry = new EasyBeansRegistry();
+easyBeansRegistry.regiser(bean1);
+easyBeansRegistry.register(new ObjectName(""), bean2);
+
+// Beans accessible via. JMX
+
+...
+
+
+easyBeansRegistry.unregisterAll(); // Removes JMX access to beans
+````
 
 ### Spring Configration
 You can expose your Spring beans via. JMX by using `EasyBeansRegistry.setBeans` method. Be sure to configure the `unregisterAll` method when the Spring application
