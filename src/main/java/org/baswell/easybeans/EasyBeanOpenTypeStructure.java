@@ -189,6 +189,11 @@ class EasyBeanOpenTypeStructure
     return getAnnotation(EasyBeanTransient.class) != null;
   }
 
+  Field getField()
+  {
+    return field;
+  }
+
   public Descriptor getDescriptor()
   {
     return descriptor;

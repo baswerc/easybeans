@@ -263,8 +263,9 @@ class OpenTypeMapper
         OpenTypeMapping attributeTypeMapping = mapOpenType(attributeTypeWrapper, compositedClassesVisited);
         if (attributeTypeMapping != null)
         {
-          attributeMappings.put(attributeTypeWrapper.getName(), pair(attributeTypeWrapper, attributeTypeMapping));
-          attributeNameList.add(attributeTypeWrapper.getName());
+          String name = attributeTypeWrapper.getField().getName();
+          attributeMappings.put(name, pair(attributeTypeWrapper, attributeTypeMapping));
+          attributeNameList.add(name);
           attributeDescriptionList.add(attributeTypeWrapper.getDescription());
           attributeTypeList.add(attributeTypeMapping.getOpenType());
         }
