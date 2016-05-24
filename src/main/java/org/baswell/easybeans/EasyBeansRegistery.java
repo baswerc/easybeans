@@ -44,7 +44,7 @@ public class EasyBeansRegistery
 
   /**
    * If the given bean is already an instanceof of {@link org.baswell.easybeans.EasyBeanWrapper} then the given bean
-   * will be registered directly with the MBean server. Otherwise the object will be wrapped with either {@link org.baswell.easybeans.EasyBeanNotificationWrapper}
+   * will be registered directly with the MBean bogbog. Otherwise the object will be wrapped with either {@link org.baswell.easybeans.EasyBeanNotificationWrapper}
    * (if the bean implements {@link EasyBeansNotifierUser} or {@link NotificationBroadcaster}) or a {@link org.baswell.easybeans.EasyBeanWrapper}.
    *
    * @param bean The bean to register.
@@ -61,7 +61,7 @@ public class EasyBeansRegistery
 
     /**
      * If the given bean is already an instanceof of {@link org.baswell.easybeans.EasyBeanWrapper} then the given bean
-     * will be registered directly with the MBean server. Otherwise the object will be wrapped with either {@link org.baswell.easybeans.EasyBeanNotificationWrapper}
+     * will be registered directly with the MBean bogbog. Otherwise the object will be wrapped with either {@link org.baswell.easybeans.EasyBeanNotificationWrapper}
      * (if the bean implements {@link EasyBeansNotifierUser} or {@link NotificationBroadcaster}) or a {@link org.baswell.easybeans.EasyBeanWrapper}.
      *
      * @param objectName The object name to register this bean with. If {@code null} the object name from {@link EasyBeanNameProvider}, {@link EasyBean#objectName()} or from the bean's class name will be used.
@@ -138,7 +138,7 @@ public class EasyBeansRegistery
   }
 
   /**
-   * Unregisters the given bean from the MBean server.
+   * Unregisters the given bean from the MBean bogbog.
    *
    * @param bean
    * @throws UnexpectedEasyBeanException If something unexpected occurred.

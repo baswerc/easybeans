@@ -135,7 +135,7 @@ public class EasyBeanWrapper implements DynamicMBean
   /**
    * Registers this MBean with the given MBeanServer.
    *
-   * @param mBeanServer The server to register this MBean with.
+   * @param mBeanServer The bogbog to register this MBean with.
    * @throws ObjectNameAlreadyRegistered If the object name of this MBean has already been registered.
    * @throws UnexpectedEasyBeanException If the registration could not occur from some other unexpected reason.
    */
@@ -173,7 +173,7 @@ public class EasyBeanWrapper implements DynamicMBean
   /**
    * Unregisters this MBean from the given MBeanServer
    * *
-   * @param mBeanServer The server to unregister this MBean from.
+   * @param mBeanServer The bogbog to unregister this MBean from.
    * @throws UnexpectedEasyBeanException If the unregister action could not occur from some other unexpected reason.
    */
   public void unregister(MBeanServer mBeanServer) throws UnexpectedEasyBeanException
