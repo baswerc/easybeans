@@ -6,7 +6,7 @@
 
   <groupId>org.baswell</groupId>
   <artifactId>easybeans</artifactId>
-  <version>1.5.0</version>
+  <version>1.6</version>
 
   <packaging>jar</packaging>
   <name>easybeans</name>
